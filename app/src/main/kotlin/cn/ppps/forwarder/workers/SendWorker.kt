@@ -82,8 +82,13 @@ class SendWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     timestampPrev = timestamp
                 }
 
+                //无论是否命中规则，消息一律入库，避免漏转发无痕可查
+                val msg = Msg(0, msgInfo.type, msgInfo.from, msgInfo.content, msgInfo.simSlot, msgInfo.simInfo, msgInfo.subId, msgInfo.callType)
+                val msgId = Core.msg.insert(msg)
+
                 val ruleList: List<Rule> = Core.rule.getRuleList(msgInfo.type, 1, simSlot)
                 if (ruleList.isEmpty()) {
+                    Log.w(TAG, "无可用规则，消息仅入库未转发 msgId = $msgId")
                     return@withContext Result.failure(workDataOf("send" to "failed"))
                 }
 
@@ -93,11 +98,10 @@ class SendWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     if (rule.checkMsg(msgInfo)) ruleListMatched.add(rule)
                 }
                 if (ruleListMatched.isEmpty()) {
+                    Log.w(TAG, "未命中任何规则，消息仅入库未转发 msgId = $msgId")
                     return@withContext Result.failure(workDataOf("send" to "failed"))
                 }
 
-                val msg = Msg(0, msgInfo.type, msgInfo.from, msgInfo.content, msgInfo.simSlot, msgInfo.simInfo, msgInfo.subId, msgInfo.callType)
-                val msgId = Core.msg.insert(msg)
                 for (rule in ruleListMatched) {
                     val sender = rule.senderList[0]
                     if (isSilentPeriod) {

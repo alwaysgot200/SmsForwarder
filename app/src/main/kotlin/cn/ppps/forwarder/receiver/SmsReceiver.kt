@@ -4,18 +4,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.google.gson.Gson
 import cn.ppps.forwarder.App
 import cn.ppps.forwarder.entity.MsgInfo
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.PhoneUtils
 import cn.ppps.forwarder.utils.SettingUtils
 import cn.ppps.forwarder.utils.SmsCommandUtils
-import cn.ppps.forwarder.utils.Worker
-import cn.ppps.forwarder.workers.SendWorker
+import cn.ppps.forwarder.utils.SmsUtils
 import com.xuexiang.xrouter.utils.TextUtils
 import java.util.Date
 
@@ -39,6 +34,8 @@ class SmsReceiver : BroadcastReceiver() {
                 && intent.action != Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION
             ) return
 
+            var displayAddress = ""
+            var rawAddress = ""
             if (intent.action == Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION || intent.action == Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION) {
                 val contentType = intent.type
                 if (contentType == "application/vnd.wap.mms-message") {
@@ -52,15 +49,37 @@ class SmsReceiver : BroadcastReceiver() {
                     }
                 }
 
-                from = intent.getStringExtra("address") ?: ""
-                Log.d(TAG, "from = $from, msg = $msg")
+                displayAddress = intent.getStringExtra("address") ?: ""
             } else {
-                for (smsMessage in Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
-                    from = smsMessage.displayOriginatingAddress
-                    msg += smsMessage.messageBody
+                val smsMessages = try {
+                    Telephony.Sms.Intents.getMessagesFromIntent(intent)
+                } catch (e: Exception) {
+                    Log.e(TAG, "getMessagesFromIntent failed: ${e.message}")
+                    null
+                }
+                for (smsMessage in smsMessages ?: emptyList()) {
+                    //逐字段取值：单个字段解析失败（如智能短信 PDU 地址/内容为空）不丢整条短信
+                    try {
+                        if (displayAddress.isEmpty()) displayAddress = smsMessage.displayOriginatingAddress ?: ""
+                    } catch (e: Exception) {
+                        Log.e(TAG, "displayOriginatingAddress failed: ${e.message}")
+                    }
+                    try {
+                        if (rawAddress.isEmpty()) rawAddress = smsMessage.originatingAddress ?: ""
+                    } catch (e: Exception) {
+                        Log.e(TAG, "originatingAddress failed: ${e.message}")
+                    }
+                    try {
+                        msg += smsMessage.messageBody ?: ""
+                    } catch (e: Exception) {
+                        Log.e(TAG, "messageBody failed: ${e.message}")
+                    }
                 }
             }
-            Log.d(TAG, "from = $from, msg = $msg")
+
+            //取号回退链：智能信息把发件人替换为名称/空时，依次从原始地址、短信库恢复真实号码
+            from = SmsUtils.resolveSender(displayAddress, rawAddress, msg, System.currentTimeMillis())
+            Log.d(TAG, "displayAddress = $displayAddress, rawAddress = $rawAddress, from = $from, msg = $msg")
 
             //短信指令
             if (SettingUtils.enableSmsCommand && msg.startsWith("smsf#")) {
@@ -109,12 +128,7 @@ class SmsReceiver : BroadcastReceiver() {
             val msgInfo = MsgInfo("sms", from, msg, Date(), simInfo, simSlot, subscription)
             Log.d(TAG, "msgInfo = $msgInfo")
 
-            val request = OneTimeWorkRequestBuilder<SendWorker>().setInputData(
-                workDataOf(
-                    Worker.SEND_MSG_INFO to Gson().toJson(msgInfo)
-                )
-            ).build()
-            WorkManager.getInstance(context).enqueue(request)
+            SmsUtils.dispatch(context, msgInfo, SmsUtils.CHANNEL_BROADCAST)
 
         } catch (e: Exception) {
             Log.e(TAG, "Parsing SMS failed: " + e.message.toString())

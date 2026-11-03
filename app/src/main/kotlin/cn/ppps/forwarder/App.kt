@@ -31,6 +31,7 @@ import cn.ppps.forwarder.receiver.BluetoothReceiver
 import cn.ppps.forwarder.receiver.CactusReceiver
 import cn.ppps.forwarder.receiver.LockScreenReceiver
 import cn.ppps.forwarder.receiver.NetworkChangeReceiver
+import cn.ppps.forwarder.receiver.SmsDbObserver
 import cn.ppps.forwarder.service.BluetoothScanService
 import cn.ppps.forwarder.service.ForegroundService
 import cn.ppps.forwarder.service.HttpServerService
@@ -266,6 +267,9 @@ class App : Application(), CactusCallback, Configuration.Provider by Core {
                 addAction(Intent.ACTION_USER_PRESENT)
             }
             registerReceiver(lockScreenReceiver, lockScreenFilter)
+
+            //监听短信库变更，兜底捕获不触发 SMS_RECEIVED 广播的短信（如系统"智能信息"通道写入的短信）
+            SmsDbObserver(applicationContext).register()
             //靠近听筒关屏
             ProximitySensorScreenHelper.refresh(this)
             //Cactus 集成双进程前台服务，JobScheduler，onePix(一像素)，WorkManager，无声音乐
