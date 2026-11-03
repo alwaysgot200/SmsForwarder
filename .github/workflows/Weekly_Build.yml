@@ -1,9 +1,7 @@
 name: Weekly Build
 
-# 触发器
+# 触发器（已停用自动触发：不随 push/定时执行，仅保留手动触发入口）
 on:
-  schedule:
-    - cron: '0 15 * * 0' #每周天在国际标准时间15点(北京时间+8，即 23:00)
   workflow_dispatch:
     inputs:
       root_sol:

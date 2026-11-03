@@ -1,12 +1,7 @@
 name: CI
 
-# topway 分支的构建验证：push / PR 均跑一次完整 release 构建（含签名、混淆）
-# 验证通过后再打 tag，即触发 Release workflow 发布
+# 已停用自动触发：构建验证已并入 Release.yml（tag 发布时一起执行），此文件仅保留手动触发入口
 on:
-  push:
-    branches: [ topway ]
-  pull_request:
-    branches: [ topway ]
   workflow_dispatch:
 
 jobs:

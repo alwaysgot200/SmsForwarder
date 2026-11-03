@@ -1,8 +1,7 @@
 name: Update Star History
 
+# 已停用自动触发：不随 push/定时执行，仅保留手动触发入口
 on:
-  schedule:
-    - cron: "17 1 * * *"
   workflow_dispatch:
 
 permissions:
