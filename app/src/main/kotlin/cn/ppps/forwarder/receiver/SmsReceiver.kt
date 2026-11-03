@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import android.telephony.SmsMessage
 import cn.ppps.forwarder.App
 import cn.ppps.forwarder.entity.MsgInfo
 import cn.ppps.forwarder.utils.Log
@@ -51,13 +52,13 @@ class SmsReceiver : BroadcastReceiver() {
 
                 displayAddress = intent.getStringExtra("address") ?: ""
             } else {
-                val smsMessages = try {
-                    Telephony.Sms.Intents.getMessagesFromIntent(intent)
+                val smsMessages: List<SmsMessage> = try {
+                    Telephony.Sms.Intents.getMessagesFromIntent(intent)?.toList() ?: emptyList()
                 } catch (e: Exception) {
                     Log.e(TAG, "getMessagesFromIntent failed: ${e.message}")
-                    null
+                    emptyList()
                 }
-                for (smsMessage in smsMessages ?: emptyList()) {
+                for (smsMessage in smsMessages) {
                     //逐字段取值：单个字段解析失败（如智能短信 PDU 地址/内容为空）不丢整条短信
                     try {
                         if (displayAddress.isEmpty()) displayAddress = smsMessage.displayOriginatingAddress ?: ""
