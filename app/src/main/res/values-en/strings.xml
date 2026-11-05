@@ -173,6 +173,7 @@
     <string name="delete_filter_log_toast">All log records for the current filter have been deleted!</string>
     <string name="resend_toast">Attempting to resend over the original sender</string>
     <string name="rematch_toast">Rematching rule sending</string>
+    <string name="logs_not_forwarded">No rule matched · Not forwarded</string>
     <string name="details">Details</string>
     <!--RuleActivity-->
     <string name="delete_rule_title">Delete confirmation</string>

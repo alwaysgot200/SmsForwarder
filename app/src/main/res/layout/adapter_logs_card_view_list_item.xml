@@ -31,6 +31,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
 
+            <!--未匹配转发规则：仅入库未转发，灰色标注避免误判为已转发-->
+            <TextView
+                android:id="@+id/tv_not_forwarded"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="@string/logs_not_forwarded"
+                android:textColor="@color/gray_text_light"
+                android:textSize="@dimen/text_size_small"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/tv_time"
                 android:layout_width="wrap_content"

@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.view.isVisible
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -35,6 +36,8 @@ class MsgPagingAdapter(private val itemClickListener: OnItemClickListener) : Pag
             //holder.binding.ivSenderImage.setImageResource(Sender.getImageId(item.sender.type))
             //holder.binding.ivStatusImage.setImageResource(item.msg.statusImageId)
             holder.binding.ivSimImage.setImageResource(item.msg.simImageId)
+            //无任何转发记录：仅捕捉入库、未匹配规则，灰色标注避免误判为已转发
+            holder.binding.tvNotForwarded.isVisible = item.logsList.isEmpty()
 
             holder.binding.layoutLogs.removeAllViews()
             for (logs in item.logsList) {
