@@ -16,11 +16,31 @@ import java.util.Date
  * 短信库（content://sms）变更监听：无广播补漏
  *
  * 系统"智能信息"等通道写入短信库的消息可能不触发 SMS_RECEIVED 广播，
- * 本监听捕获新入库短信，经 [SmsUtils.dispatch] 双通道去重后补发，与广播通道不重不漏。
+ * 本监听捕获新入库短信，经 [SmsUtils.dispatch] 统一去重后补发，与广播通道不重不漏。
  * 长短信按（发件人+时间）归并分段后再补发。
+ *
+ * 水位线只前瞻、永不回扫（杜绝首装后历史短信全量转发）：
+ * - 未初始化（0）：首次扫描吞掉历史存量，仅保护最近窗口内新入库的短信（即触发本次扫描的新短信）；
+ * - 已初始化（> 0）：只处理水位线之后的新行；
+ * - 总开关关闭期间入库的短信吞掉不补发（开关只影响此后新短信）。
  *
  * @since 2026年11月3日
  */
+
+//初始化保护窗口：首次扫描只保护最近 N 毫秒内入库的行（短信库 date 为短信中心时间戳，容忍 60 秒偏差），
+//既保证触发首次扫描的新短信不被吞掉，又杜绝历史短信回扫
+internal const val SMS_DB_INIT_PROTECT_WINDOW_MS = 60_000L
+
+//扫描决策结果：水位线新值、需查询的行范围、是否分发
+internal data class SmsDbScanPlan(val newWatermark: Long, val queryAfterId: Long, val queryMinDate: Long, val dispatch: Boolean)
+
+//水位线扫描决策（纯逻辑，便于单元测试）：未初始化只前瞻并保护最近入库行；开关关闭吞存量；正常只扫新行
+internal fun planSmsDbScan(lastId: Long, maxId: Long, enableSms: Boolean, now: Long): SmsDbScanPlan = when {
+    !enableSms -> SmsDbScanPlan(maxId, 0L, 0L, false)
+    lastId <= 0L -> SmsDbScanPlan(maxId, 0L, now - SMS_DB_INIT_PROTECT_WINDOW_MS, true)
+    else -> SmsDbScanPlan(maxId, lastId, 0L, true)
+}
+
 class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
 
     companion object {
@@ -29,7 +49,7 @@ class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
         private val handlerThread = HandlerThread("sms-db-observer").apply { start() }
         private val handler = Handler(handlerThread.looper)
 
-        //水位线：仅处理首次注册之后新入库的短信（持久化，进程重启后继续生效）
+        //水位线：0 = 未初始化；> 0 = 只处理其后新入库的短信（持久化，进程重启后继续生效，绝不回写 0）
         private const val WATERMARK_KEY = "sms_db_observer_last_id"
 
         //长短信分段连续入库会触发多次变更，延迟合并统一处理
@@ -43,12 +63,8 @@ class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
     private val scanRunnable = Runnable { scan() }
 
     fun register() {
-        var lastId: Long by HistoryUtils(WATERMARK_KEY, 0L)
-        if (lastId <= 0L) {
-            lastId = queryMaxId()
-        }
         context.contentResolver.registerContentObserver(SMS_URI, true, this)
-        Log.i(TAG, "短信库监听已注册，水位线 lastId = $lastId")
+        Log.i(TAG, "短信库监听已注册（水位线在首次扫描时初始化，只前瞻不回扫）")
     }
 
     override fun onChange(selfChange: Boolean, uri: Uri?) {
@@ -58,35 +74,53 @@ class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
 
     private fun scan() {
         try {
-            if (!SettingUtils.enableSms) return
-
             var lastId: Long by HistoryUtils(WATERMARK_KEY, 0L)
-            val rows = queryNewRows(lastId)
-            if (rows.isEmpty()) return
 
-            //长短信分段按（发件人+时间）归并
-            val grouped = rows.groupBy { "${it.address}|${it.date}" }
-            for (group in grouped.values) {
-                val first = group.first()
-                val body = group.sortedBy { it.id }.joinToString("") { it.body }
-                val msgInfo = MsgInfo("sms", first.address.trim(), body, Date(first.date), "", -1, first.subId)
-                Log.d(TAG, "短信库补漏: msgInfo = $msgInfo")
-                SmsUtils.dispatch(context, msgInfo, SmsUtils.CHANNEL_DB)
+            val maxId = queryMaxId()
+            if (maxId <= 0L) {
+                Log.w(TAG, "短信库不可读（READ_SMS 权限未授予？），保持水位线 lastId = $lastId，等待下次扫描重试")
+                return
             }
 
-            lastId = rows.maxOf { it.id }
-            Log.i(TAG, "短信库补漏扫描完成：补发 ${grouped.size} 条，水位线 lastId = $lastId")
+            val plan = planSmsDbScan(lastId, maxId, SettingUtils.enableSms, System.currentTimeMillis())
+            if (!plan.dispatch) {
+                lastId = plan.newWatermark
+                Log.i(TAG, "转发开关关闭：吞掉期间新入库短信不补发，水位线推进到 lastId = $lastId")
+                return
+            }
+            if (plan.queryMinDate > 0L) {
+                Log.i(TAG, "水位线首次初始化：吞掉历史存量不补发，仅处理最近 ${SMS_DB_INIT_PROTECT_WINDOW_MS / 1000} 秒内入库的短信")
+            }
+
+            val rows = queryNewRows(plan.queryAfterId, plan.queryMinDate)
+            dispatchRows(rows)
+            lastId = if (rows.isEmpty()) plan.newWatermark else maxOf(plan.newWatermark, rows.maxOf { it.id })
+            Log.i(TAG, "短信库补漏扫描完成：补发 ${rows.size} 条，水位线 lastId = $lastId")
         } catch (e: Exception) {
             Log.e(TAG, "SmsDbObserver scan failed: ${e.message}")
         }
     }
 
-    private fun queryNewRows(afterId: Long): List<SmsRow> {
+    //长短信分段按（发件人+时间）归并后统一去重分发
+    private fun dispatchRows(rows: List<SmsRow>) {
+        val grouped = rows.groupBy { "${it.address}|${it.date}" }
+        for (group in grouped.values) {
+            val first = group.first()
+            val body = group.sortedBy { it.id }.joinToString("") { it.body }
+            val msgInfo = MsgInfo("sms", first.address.trim(), body, Date(first.date), "", -1, first.subId)
+            Log.d(TAG, "短信库补漏: msgInfo = $msgInfo")
+            SmsUtils.dispatch(context, msgInfo, SmsUtils.CHANNEL_DB)
+        }
+    }
+
+    private fun queryNewRows(afterId: Long, minDate: Long = 0L): List<SmsRow> {
         val rows = mutableListOf<SmsRow>()
         try {
+            val selection = if (minDate > 0L) "_id > ? AND type = 1 AND date >= ?" else "_id > ? AND type = 1"
+            val selectionArgs = if (minDate > 0L) arrayOf(afterId.toString(), minDate.toString()) else arrayOf(afterId.toString())
             val cursor = context.contentResolver.query(
                 SMS_URI, arrayOf("_id", "address", "body", "date", "sub_id"),
-                "_id > ? AND type = 1", arrayOf(afterId.toString()), "_id asc"
+                selection, selectionArgs, "_id asc"
             ) ?: return rows
             cursor.use {
                 val idxId = it.getColumnIndex("_id")
@@ -115,7 +149,7 @@ class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
     private fun queryMaxId(): Long {
         try {
             val cursor = context.contentResolver.query(
-                SMS_URI, arrayOf("_id"), null, null, "_id desc limit 1"
+                SMS_URI, arrayOf("_id"), null, null, "_id desc"
             ) ?: return 0L
             cursor.use {
                 return if (it.moveToFirst()) it.getLong(0) else 0L

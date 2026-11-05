@@ -71,8 +71,8 @@ class SettingUtils private constructor() {
         //是否加载应用列表——系统应用
         var enableLoadSystemAppList: Boolean by SharedPreference(ENABLE_LOAD_SYSTEM_APP_LIST, false)
 
-        //过滤多久内重复消息
-        var duplicateMessagesLimits: Int by SharedPreference(SP_DUPLICATE_MESSAGES_LIMITS, 0)
+        //过滤多久内重复消息（秒），默认 6 秒兜底统一去重
+        var duplicateMessagesLimits: Int by SharedPreference(SP_DUPLICATE_MESSAGES_LIMITS, 6)
 
         //免打扰(禁用转发)时间段——开始
         var silentPeriodStart: Int by SharedPreference(SP_SILENT_PERIOD_START, 0)

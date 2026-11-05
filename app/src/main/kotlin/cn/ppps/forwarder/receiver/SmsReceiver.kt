@@ -20,8 +20,6 @@ import java.util.Date
 class SmsReceiver : BroadcastReceiver() {
 
     private var TAG = SmsReceiver::class.java.simpleName
-    private var from = ""
-    private var msg = ""
 
     override fun onReceive(context: Context, intent: Intent) {
         try {
@@ -35,6 +33,7 @@ class SmsReceiver : BroadcastReceiver() {
                 && intent.action != Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION
             ) return
 
+            var msg = ""
             var displayAddress = ""
             var rawAddress = ""
             if (intent.action == Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION || intent.action == Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION) {
@@ -45,7 +44,7 @@ class SmsReceiver : BroadcastReceiver() {
                         val data = intent.getByteArrayExtra("data")
                         if (data != null) {
                             // 处理收到的 MMS 数据
-                            handleMmsData(context, data)
+                            msg += handleMmsData(context, data)
                         }
                     }
                 }
@@ -79,7 +78,7 @@ class SmsReceiver : BroadcastReceiver() {
             }
 
             //取号回退链：智能信息把发件人替换为名称/空时，依次从原始地址、短信库恢复真实号码
-            from = SmsUtils.resolveSender(displayAddress, rawAddress, msg, System.currentTimeMillis())
+            val from = SmsUtils.resolveSender(displayAddress, rawAddress, msg, System.currentTimeMillis())
             Log.d(TAG, "displayAddress = $displayAddress, rawAddress = $rawAddress, from = $from, msg = $msg")
 
             //短信指令
@@ -160,7 +159,9 @@ class SmsReceiver : BroadcastReceiver() {
         SmsCommandUtils.execute(context, smsCommand)
     }
 
-    private fun handleMmsData(context: Context, data: ByteArray) {
+    //处理 MMS 数据，返回文本部分内容
+    private fun handleMmsData(context: Context, data: ByteArray): String {
+        val textBuilder = StringBuilder()
         try {
             val mmsClass = Class.forName("android.telephony.gsm.SmsMessage")
             val method = mmsClass.getDeclaredMethod("createFromPdu", ByteArray::class.java)
@@ -188,7 +189,7 @@ class SmsReceiver : BroadcastReceiver() {
                         // 处理文本信息
                         if (text != null) {
                             Log.d(TAG, "Text: $text")
-                            msg += text
+                            textBuilder.append(text)
                         }
                     }
 
@@ -210,6 +211,7 @@ class SmsReceiver : BroadcastReceiver() {
             e.printStackTrace()
             Log.e(TAG, "handleMmsData: $e")
         }
+        return textBuilder.toString()
     }
 
 }
