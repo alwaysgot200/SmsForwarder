@@ -22,15 +22,22 @@ buildscript {
 }
 
 allprojects {
+    // 依赖仓库按构建环境自适应（本地国内网络与 CI 海外构建机处境相反）：
+    // - CI（GitHub Actions，直连官方源稳定）：google/mavenCentral/jitpack 优先，避免去撞偶发 502 的 aliyun-central；
+    //   aliyun-public 仅作 jcenter 停源库（broccoli 等）兜底，勿删。
+    // - 本地（国内，直连 google/mavenCentral 被墙/极慢）：aliyun 镜像加速，jitpack 提供 com.github.* 独有库。
     repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
-        maven { url 'https://repo1.maven.org/maven2/' }
-        maven { url 'https://oss.sonatype.org/content/repositories/public' }
-        maven { url "https://jitpack.io" }
+        if (System.getenv("CI")) {
+            google()
+            mavenCentral()
+            maven { url "https://jitpack.io" }
+            maven { url 'https://maven.aliyun.com/repository/public' }
+        } else {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            maven { url "https://jitpack.io" }
+        }
     }
 
 }
