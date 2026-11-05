@@ -18,7 +18,7 @@ import cn.ppps.forwarder.entity.MsgInfo
 import cn.ppps.forwarder.entity.TaskSetting
 import cn.ppps.forwarder.utils.CHECK_SIM_SLOT_ALL
 import cn.ppps.forwarder.utils.DataProvider
-import cn.ppps.forwarder.utils.HistoryUtils
+import cn.ppps.forwarder.utils.DuplicateFilter
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SendUtils
 import cn.ppps.forwarder.utils.SettingUtils
@@ -71,15 +71,10 @@ class SendWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val duplicateMessagesLimits = SettingUtils.duplicateMessagesLimits * 1000L
                 if (duplicateMessagesLimits > 0L) {
                     val key = CipherUtils.md5(msgInfo.type + msgInfo.from + msgInfo.content)
-                    val timestamp: Long = System.currentTimeMillis()
-                    var timestampPrev: Long by HistoryUtils(key, timestamp)
-                    Log.d(TAG, "duplicateMessagesLimits=$duplicateMessagesLimits, timestamp=$timestamp, timestampPrev=$timestampPrev, msgInfo=$msgInfo")
-                    if (timestampPrev != timestamp && timestamp - timestampPrev <= duplicateMessagesLimits) {
-                        Log.e(TAG, "过滤重复消息机制")
-                        timestampPrev = timestamp
+                    if (DuplicateFilter.isDuplicate(key, duplicateMessagesLimits)) {
+                        Log.e(TAG, "过滤重复消息机制 msgInfo=$msgInfo")
                         return@withContext Result.failure(workDataOf("send" to "failed"))
                     }
-                    timestampPrev = timestamp
                 }
 
                 //无论是否命中规则，消息一律入库，避免漏转发无痕可查

@@ -97,15 +97,10 @@ class SmsCommandUtils {
                     if (duplicateMessagesLimits > 0L) {
                         duplicateMessagesLimits += 10000L //系统指令多加10秒避免误操作
                         val key = CipherUtils.md5(smsCommand)
-                        val timestamp: Long = System.currentTimeMillis()
-                        var timestampPrev: Long by HistoryUtils(key, timestamp)
-                        Log.d(TAG, "duplicateMessagesLimits=$duplicateMessagesLimits, timestamp=$timestamp, timestampPrev=$timestampPrev, msgInfo=$smsCommand")
-                        if (timestampPrev != timestamp && timestamp - timestampPrev <= duplicateMessagesLimits) {
-                            Log.e(TAG, "过滤重复消息机制")
-                            timestampPrev = timestamp
+                        if (DuplicateFilter.isDuplicate(key, duplicateMessagesLimits)) {
+                            Log.e(TAG, "过滤重复消息机制 smsCommand=$smsCommand")
                             return false
                         }
-                        timestampPrev = timestamp
                     }
 
                     if (action == "reboot") {

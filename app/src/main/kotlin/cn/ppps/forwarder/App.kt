@@ -39,6 +39,7 @@ import cn.ppps.forwarder.service.LocationService
 import cn.ppps.forwarder.utils.ACTION_START
 import cn.ppps.forwarder.utils.AppInfo
 import cn.ppps.forwarder.utils.CactusSave
+import cn.ppps.forwarder.utils.DuplicateFilter
 import cn.ppps.forwarder.utils.FRONT_CHANNEL_ID
 import cn.ppps.forwarder.utils.FRONT_CHANNEL_NAME
 import cn.ppps.forwarder.utils.FRONT_NOTIFY_ID
@@ -343,6 +344,8 @@ class App : Application(), CactusCallback, Configuration.Provider by Core {
         Log.init(applicationContext)
         // 转发历史工具类初始化
         HistoryUtils.init(applicationContext)
+        // 一次性清理旧版本遗留的去重存储键（升级后首次启动执行）
+        DuplicateFilter.migrateLegacy()
         // 版本更新初始化
         XUpdateInit.init(this)
         // 运营统计数据

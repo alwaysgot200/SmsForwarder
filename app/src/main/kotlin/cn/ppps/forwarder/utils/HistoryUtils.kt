@@ -33,6 +33,16 @@ class HistoryUtils<T>(private val name: String, private val default: T) : ReadWr
 
         //根据key删除存储数据
         fun clearPreference(key: String) = preference.edit().remove(key).commit()
+
+        //批量删除满足条件的存储键，返回删除数量（用于清理历史遗留垃圾键）
+        fun removeKeysIf(predicate: (String) -> Boolean): Int {
+            val keys = preference.all.keys.filter(predicate)
+            if (keys.isEmpty()) return 0
+            val editor = preference.edit()
+            keys.forEach { editor.remove(it) }
+            editor.apply()
+            return keys.size
+        }
     }
 
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
