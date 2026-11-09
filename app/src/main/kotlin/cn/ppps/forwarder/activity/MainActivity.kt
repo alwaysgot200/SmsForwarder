@@ -111,6 +111,12 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
                 override fun onResult(grantedList: MutableList<IPermission>, deniedList: MutableList<IPermission>) {
                     val allGranted = deniedList.isEmpty()
                     if (!allGranted) {
+                        //Android 13+ 通知权限被拒时前台服务照常运行但通知不可见，用户易误以为未在运行：
+                        //被"不再询问"永久拒绝时引导跳转权限设置页补授权（否则系统授权框不再弹出）；
+                        //普通拒绝下次启动会再次弹出系统授权框，持续引导
+                        if (XXPermissions.isDoNotAskAgainPermissions(getTopActivity(), deniedList)) {
+                            XXPermissions.startPermissionActivity(getContext(), deniedList)
+                        }
                         XToastUtils.error(R.string.tips_notification)
                         return
                     }
