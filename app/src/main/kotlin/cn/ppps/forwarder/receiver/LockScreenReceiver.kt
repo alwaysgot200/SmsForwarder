@@ -8,9 +8,7 @@ import android.os.Build
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import cn.ppps.forwarder.service.ForegroundService
 import cn.ppps.forwarder.utils.Log
-import cn.ppps.forwarder.utils.SettingUtils
 import cn.ppps.forwarder.utils.TASK_CONDITION_LOCK_SCREEN
 import cn.ppps.forwarder.utils.TaskWorker
 import cn.ppps.forwarder.utils.task.TaskUtils
@@ -24,12 +22,6 @@ class LockScreenReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
 
         if (context == null || (intent?.action != Intent.ACTION_SCREEN_OFF && intent?.action != Intent.ACTION_SCREEN_ON && intent?.action != Intent.ACTION_USER_PRESENT)) return
-
-        //解锁自愈：厂商系统查杀后进程若还存活，解锁时第一时间恢复前台服务（后台启动受限时静默，由看门狗兜底）
-        if (intent.action == Intent.ACTION_USER_PRESENT && !SettingUtils.enablePureClientMode && !ForegroundService.isRunning) {
-            Log.w(TAG, "解锁自愈：前台服务未运行，重新拉起")
-            KeepAliveReceiver.restartForegroundService(context)
-        }
 
         var action = intent.action.toString()
         if (action == Intent.ACTION_SCREEN_OFF && isDeviceLocked(context)) {

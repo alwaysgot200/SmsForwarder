@@ -367,8 +367,6 @@
     <string name="enable_custom_templates_tips">优先级：转发规则的自定义模板 > 全局自定义模版 > 默认</string>
     <string name="enable_regex_replace">启用正则替换内容</string>
     <string name="enable_regex_replace_tips">格式：正则表达式===替换结果，每行一个规则.\n例如：(\\d{3})\\d{4}(\\d{4})===$1****$2</string>
-    <string name="enable_exclude_from_recents">在最近任务列表中隐藏</string>
-    <string name="enable_exclude_from_recents_tips">请先锁定后再开启隐藏，有效避免手动误杀进程</string>
     <string name="custom_template">转发信息模版</string>
     <string name="custom_template_tips">Tip：按需插入内容标签；留空使用默认模版</string>
     <string name="insert_sender">来源号码</string>
@@ -562,8 +560,6 @@
     <string name="toast_granted_part">获取部分权限成功，但部分权限未正常授予，APP部分功能可能受限！</string>
     <string name="toast_denied_never">被永久拒绝授权，前往系统设置手动授予权限？</string>
     <string name="toast_denied">获取必需的权限失败，APP功能可能受限！</string>
-    <string name="play_silence_music">后台播放无声音乐</string>
-    <string name="one_pixel_activity">1像素透明Activity</string>
     <string name="optional">可选</string>
     <string name="TelegramChatIdTips">请按照wiki中的步骤获取</string>
     <string name="TelegramMessageThreadIdTips">可选，请按照wiki中的步骤获取</string>
@@ -898,10 +894,6 @@
     <string name="pure_task_mode_tips">启动APP时直接进入自动任务</string>
     <string name="debug_mode">开启调试模式</string>
     <string name="debug_mode_tips">将Log.*写入文件，以便排查问题；可导出到下载目录</string>
-    <string name="optional_components">可选组件：</string>
-    <string name="enable_cactus">启用 Cactus 增强保活措施（会增加耗电）</string>
-    <string name="enable_cactus_tips">双进程前台服务/JobScheduler/WorkManager/1像素/无声音乐</string>
-    <string name="music_interval">唤醒间隔</string>
     <string name="load_app_list">启动时异步获取已安装App列表</string>
     <string name="load_app_list_tips">用于加速进入应用列表/编辑转发规则下拉选择/替换{{APP_NAME}}</string>
     <string name="load_app_list_toast">开启异步获取已安装App列表时必选一个类型</string>

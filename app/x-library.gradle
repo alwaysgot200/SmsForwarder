@@ -1,7 +1,7 @@
-apply plugin: 'com.xuexiang.xrouter'
 apply plugin: 'kotlin-kapt'
-//apply plugin: 'android-aspectjx'
-apply plugin: 'com.xuexiang.xaop'
+//XRouter/XAOP 的 Transform 插件已随 AGP 8 移除：
+//路由表由 xrouter-runtime 的 dex 扫描回退自动注册（com.xuexiang.xrouter.routes）；
+//XAOP 切面由 app/build.gradle 中的 aspectj 后编译织入
 
 //自动添加依赖
 configurations.each { configuration ->
@@ -52,15 +52,4 @@ configurations.configureEach {
     resolutionStrategy.force deps.okhttp3
 }
 
-/*
-aspectjx {
-    // 这里需要修改包名
-    include 'cn.ppps.forwarder'
-    // 排除所有package路径中包含`android.support`的class文件及库（jar文件）
-    exclude 'android.support'
-    // 移除kotlin相关，编译错误和提升速度
-    exclude 'kotlin.jvm', 'kotlin.internal'
-    exclude 'kotlinx.coroutines.internal', 'kotlinx.coroutines.android'
-    exclude '*.jar', '*.aar', '*.so'
-}
-*/
+//[aspectjx 不兼容 AGP 8，已废弃；XAOP 织入改由 io.freefair aspectj 后编译织入实现，见 app/build.gradle]

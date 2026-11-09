@@ -264,9 +264,6 @@
 
 -keep class com.xuexiang.xui.widget.edittext.materialedittext.** { *; }
 
-# Android Keep Alive(安卓保活)，Cactus 集成双进程前台服务，JobScheduler，onePix(一像素)，WorkManager，无声音乐
--keep class com.gyf.cactus.entity.* {*;}
-
 # 排除实体类
 -keep class cn.ppps.forwarder.core.http.entity.** {*;}
 -keep class cn.ppps.forwarder.database.entity.** {*;}

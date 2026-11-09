@@ -10,12 +10,12 @@ jobs:
     steps:
       # 检出代码
       - uses: actions/checkout@v4
-      # 设置jdk环境为11
-      - name: set up JDK 11
+      # 设置jdk环境为21（与本机一致，Gradle 8.13 + AGP 8.13 需 JDK 17+）
+      - name: set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '21'
           java-package: jdk
       # 从 GitHub Actions 变量解析打包秘钥（替代上游的 pppscn/keystore 私有仓库 + TOKEN）
       - name: Decode Android Keystore

@@ -7,23 +7,10 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-kapt'
     id 'kotlin-parcelize'
-    id 'img-optimizer'
-    id 'com.yanzhenjie.andserver'
-    //AspectJX: https://github.com/wurensen/gradle_plugin_android_aspectjx
-    //id "io.github.wurensen.android-aspectjx" version "3.3.2"
+    //AspectJ 后编译织入（AGP 8 适配）：织入 XAOP 的 @SingleClick 等二进制切面
+    //https://github.com/freefair/android-gradle-plugins
+    id "io.freefair.android.aspectj.post-compile-weaving" version "8.13.0"
 }
-
-/**
- * ================================
- * XAOP / AspectJ 开关
- * 只在 release 启用
- * debug / test 全部关闭（避免 Windows 文件锁）
- * ================================
- */
-ext.enableXaop = gradle.startParameter.taskNames.any { name ->
-    name.toLowerCase().contains("release")
-}
-println "[XAOP] enable = ${enableXaop}, tasks = ${gradle.startParameter.taskNames}"
 
 def keyProps = new Properties()
 def keyPropsFile = rootProject.file('keystore/keystore.properties')
@@ -45,7 +32,8 @@ gradle.projectsEvaluated {
 
 android {
     buildToolsVersion build_versions.build_tools
-    compileSdkVersion build_versions.target_sdk
+    //compileSdk 35（Room 2.6.1 要求 ≥34），targetSdk 仍是 build_versions.target_sdk
+    compileSdkVersion build_versions.compile_sdk
 
     testOptions {
         unitTests.returnDefaultValues = true
@@ -56,8 +44,15 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    //Kotlin 与 Java 编译目标保持一致（KGP 1.9+ 强校验）
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
     buildFeatures {
         viewBinding true
+        //AGP 8 默认不再生成 BuildConfig，需显式开启（代码使用 BUILD_TIME 等字段）
+        buildConfig true
     }
 
     //编译日期
@@ -98,11 +93,15 @@ android {
             storeFile keyProps['storeFile'] ? file(keyProps['storeFile']) : null
             storePassword keyProps['storePassword']
         }
-        debug {
-            keyAlias keyProps['keyAlias']
-            keyPassword keyProps['keyPassword']
-            storeFile keyProps['storeFile'] ? file(keyProps['storeFile']) : null
-            storePassword keyProps['storePassword']
+        //仅当本地存在 keystore/keystore.properties 时才覆盖内置 debug 签名配置，
+        //否则保留 AGP 默认调试签名（~/.android/debug.keystore），无密钥也能本地出包
+        if (keyPropsFile.exists()) {
+            debug {
+                keyAlias keyProps['keyAlias']
+                keyPassword keyProps['keyPassword']
+                storeFile keyProps['storeFile'] ? file(keyProps['storeFile']) : null
+                storePassword keyProps['storePassword']
+            }
         }
     }
 
@@ -182,15 +181,13 @@ android {
         }
     }
     def abiCodes = ['universal': 1, 'armeabi-v7a': 2, 'arm64-v8a': 3, 'x86': 4, 'x86_64': 5]
-    packagingOptions {
-        //去除FrpcLib的so，用时下载并动态加载
-        if (excludeFrpclib.toBoolean()) {
-            exclude 'lib/armeabi-v7a/libgojni.so'
-            exclude 'lib/arm64-v8a/libgojni.so'
-            exclude 'lib/x86/libgojni.so'
-            exclude 'lib/x86_64/libgojni.so'
-        }
+    //AGP 8：packagingOptions 更名为 packaging，lib/** 排除移入 jniLibs 精确生效
+    packaging {
         jniLibs {
+            //去除FrpcLib的so，用时下载并动态加载
+            if (excludeFrpclib.toBoolean()) {
+                excludes += ['lib/armeabi-v7a/libgojni.so', 'lib/arm64-v8a/libgojni.so', 'lib/x86/libgojni.so', 'lib/x86_64/libgojni.so']
+            }
             excludes += ["kotlin/**"]
         }
         resources {
@@ -241,37 +238,70 @@ android {
     }
     namespace 'cn.ppps.forwarder'
 
-    /**
-     * ⚠️ Windows + XAOP 下，避免 debug/test 触发 clean
-     */
-    if (isNeedClean.toBoolean() && enableXaop) {
-        preBuild.dependsOn clean
-    }
 }
 
 /**
  * ================================
- * XAOP 兜底：非 release 禁用所有 XAOP / AspectJ Task
+ * XAOP 切面织入（@SingleClick / @MemoryCache 等）
+ * 由 io.freefair.android.aspectj.post-compile-weaving 以 ajc 后编译织入。
+ * xaop-runtime 仅发布 AAR，而 ajc 的 aspectpath 只接受 jar，
+ * 故从 AAR 中提取 classes.jar（二进制切面）作为切面路径。
  * ================================
  */
-afterEvaluate {
-    android.applicationVariants.configureEach { variant ->
-        if (variant.buildType.name != "release") {
-            tasks.matching {
-                it.name.toLowerCase().contains("xaop") || it.name.toLowerCase().contains("aspectj")
-            }.configureEach {
-                enabled = false
-                println "[XAOP] disable task: ${name}"
-            }
+configurations {
+    xaopAspectAar
+    //ajc 编译器工具链（详见下方 AjcWeave 的 aspectjClasspath 说明）
+    ajcTool
+}
+
+dependencies {
+    xaopAspectAar deps.xlibrary.xaop_runtime
+}
+
+def xaopAspectJar = layout.buildDirectory.file('aspectj/xaop-runtime-classes.jar')
+def extractXaopAspect = tasks.register('extractXaopAspect') {
+    inputs.files(configurations.xaopAspectAar)
+    outputs.file(xaopAspectJar)
+    doLast {
+        def out = xaopAspectJar.get().asFile
+        out.parentFile.mkdirs()
+        //配置含 xaop-runtime 及其传递依赖，只取目标 AAR
+        def aar = configurations.xaopAspectAar.files.find { it.name.startsWith('xaop-runtime') }
+        def zip = new java.util.zip.ZipFile(aar)
+        try {
+            out.bytes = zip.getInputStream(zip.getEntry('classes.jar')).bytes
+        } finally {
+            zip.close()
         }
     }
 }
 
-/**
- * 单元测试强制关闭 XAOP
- */
-tasks.withType(Test).configureEach {
-    systemProperty "xaop.enable", "false"
+dependencies {
+    //XAOP 织入产物的运行时依赖（JoinPoint/AroundClosure 等 API）：
+    //旧 xaop-plugin 构建时自动注入 aspectjrt 1.8.9，移除插件后在此显式声明（功能无损）。
+    //org.aspectj.lang API 与 1.8.9 完全兼容，1.9.21+ 支持在 JDK 21 上运行 ajc
+    implementation 'org.aspectj:aspectjrt:1.9.22.1'
+    //ajc 编译器（仅构建期，不进 APK）
+    ajcTool 'org.aspectj:aspectjtools:1.9.22.1'
+    aspect files(xaopAspectJar) { builtBy extractXaopAspect }
+}
+
+//确保切面提取先于各变体的织入任务执行
+tasks.matching { it.name.endsWith('AjcWeave') }.configureEach {
+    dependsOn extractXaopAspect
+    //AjcWeave 继承自 JavaCompile 但只用 outjar 输出，补一个 convention 值，
+    //避免 kapt 等下游任务查询 classpath 元数据时报 "destinationDirectory has no value"
+    destinationDirectory.set(layout.buildDirectory.dir("intermediates/ajc/${name}"))
+    doFirst {
+        //ajc 解析 android.* 类型需要 android.jar（AGP 只把它挂在 javac 的 bootclasspath，
+        //织入任务拿不到，导致 can't find type android.view.View 等错误）。
+        //配置期 classpath 尚未就绪（由变体配置稍后填充），故在执行前补入
+        classpath += files("${project.android.sdkDirectory}/platforms/android-${build_versions.compile_sdk}/android.jar")
+    }
+    //显式指定 ajc 编译器（setFrom 覆盖插件的自动推断）：
+    //插件在配置期从 classpath 文件名推断 aspectjtools，但此时变体 classpath 尚未填充
+    //（且 enableJetifier 会把构件改名为 jetified-* 破坏文件名匹配），推断必然失败，故直接给出
+    aspectjClasspath.setFrom(configurations.ajcTool)
 }
 
 dependencies {
@@ -326,12 +356,11 @@ dependencies {
 
     def work_version = '2.8.1'
     //noinspection GradleDependency
-    api("androidx.work:work-multiprocess:$work_version")
-    //noinspection GradleDependency
     api("androidx.work:work-runtime-ktx:$work_version")
 
     //Android Room
-    def room_version = '2.5.2'
+    //2.6.1：兼容 Kotlin 1.9 的 kapt stubs 元数据（2.5.2 会误判 suspend DAO 与 val 实体字段）
+    def room_version = '2.6.1'
     //noinspection GradleDependency
     implementation "androidx.room:room-ktx:$room_version"
     //noinspection GradleDependency

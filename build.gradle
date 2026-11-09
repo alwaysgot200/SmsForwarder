@@ -6,8 +6,7 @@ buildscript {
     dependencies {
         classpath deps.android_gradle_plugin
         classpath deps.android_maven_gradle_plugin
-        //图片压缩
-        classpath 'com.chenenyu:img-optimizer:1.3.0'
+        //图片压缩（img-optimizer）已随 AGP 8 移除：基于旧 Transform API，且仅构建期压缩源码 PNG，不影响运行时功能
         //美团多渠道打包
         //classpath 'com.meituan.android.walle:plugin:1.1.6'
         //滴滴的质量优化框架
@@ -16,8 +15,8 @@ buildscript {
             classpath deps.booster.task_processed_res
             classpath deps.booster.task_resource_deredundancy
         }
-        //AndServer
-        classpath 'cn.ppps.andserver:plugin:2.1.12'
+        //AndServer 插件已随 AGP 8 移除：其唯一作用是生成 assets 标记文件，
+        //现以静态文件 app/src/main/assets/cn.ppps.forwarder.andserver 替代，运行时注册逻辑不变
     }
 }
 

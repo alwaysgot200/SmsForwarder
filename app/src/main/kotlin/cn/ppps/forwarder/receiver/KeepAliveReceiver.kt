@@ -16,7 +16,7 @@ import cn.ppps.forwarder.utils.SettingUtils
  * allow-while-idle 闹钟在 Doze 下仍触发），发现前台服务未运行时重新拉起。
  *
  * 厂商系统（如 OPPO ColorOS）熄屏后会查杀后台应用，杀掉进程后广播、
- * Cactus、JobScheduler 均随进程失效，只有系统侧闹钟还能唤醒本应用：
+ * JobScheduler、应用内定时器均随进程失效，只有系统侧闹钟还能唤醒本应用：
  * 进程重启 → App.onCreate → 前台服务、各监听与短信库观察者全部恢复。
  */
 class KeepAliveReceiver : BroadcastReceiver() {

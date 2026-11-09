@@ -3,7 +3,6 @@ package cn.ppps.forwarder.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import cn.ppps.forwarder.activity.SplashActivity
 import cn.ppps.forwarder.service.ForegroundService
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
@@ -17,20 +16,10 @@ class BootCompletedReceiver : BroadcastReceiver() {
 
         when (intent?.action) {
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_LOCKED_BOOT_COMPLETED -> {
-                //直接拉起前台服务：开机广播属于系统豁免场景；
-                //Android 10+ 禁止后台启动 Activity，原有仅启动界面的自启方式在新系统上会静默失效
+                //开机广播属于系统豁免场景，直接拉起前台服务保活
+                //（Android 10+ 禁止后台启动 Activity，不再尝试拉起界面）
                 if (!SettingUtils.enablePureClientMode) {
                     KeepAliveReceiver.restartForegroundService(context)
-                }
-
-                try {
-                    Log.d(TAG, "强制重启APP一次")
-                    val intent1 = Intent(context, SplashActivity::class.java)
-                    intent1.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    context.startActivity(intent1)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Log.e(TAG, "强制重启APP失败:${e.message}")
                 }
             }
 

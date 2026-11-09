@@ -98,7 +98,6 @@
 + https://github.com/xuexiangjys/XUpdate （在线升级）
 + https://github.com/getActivity/XXPermissions (权限请求框架)
 + https://github.com/mainfunx/frpc_android (内网穿透)
-+ https://github.com/gyf-dev/Cactus (保活措施)
 + https://github.com/yanzhenjie/AndServer (HttpServer)
 + https://github.com/jenly1314/Location (Location)
 + https://gitee.com/xuankaicat/kmnkt (socket通信)

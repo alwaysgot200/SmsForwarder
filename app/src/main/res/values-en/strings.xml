@@ -366,8 +366,6 @@
     <string name="enable_custom_templates_tips">Priority: custom template for forwarding rules > Global custom template > System default</string>
     <string name="enable_regex_replace">Enable Regular Replacement Content</string>
     <string name="enable_regex_replace_tips">Format: RegularExpression===ReplacementResult,One rule per line.\ne.g. (\\d{3})\\d+(\\d{4})===$1****$2</string>
-    <string name="enable_exclude_from_recents">Hide from recent Apps</string>
-    <string name="enable_exclude_from_recents_tips">Please lock it first and then enable to hide</string>
     <string name="custom_template">Custom templates</string>
     <string name="custom_template_tips">Tip: Insert labels as needed; Leave blank to apply default template</string>
     <string name="insert_sender">Phone</string>
@@ -561,8 +559,6 @@
     <string name="toast_granted_part">Some permissions are successfully obtained, but some permissions are not granted normally, and some functions of the APP may be limited!</string>
     <string name="toast_denied_never">Permanently denied authorization, go to system settings to manually grant permissions?</string>
     <string name="toast_denied">Failed to obtain necessary permissions, APP function may be limited!</string>
-    <string name="play_silence_music">Play Silent Music</string>
-    <string name="one_pixel_activity">One Pixel Activity</string>
     <string name="optional">Opt.</string>
     <string name="TelegramChatIdTips">Follow the steps in the wiki to obtain it</string>
     <string name="TelegramMessageThreadIdTips">Opt., Follow the steps in the wiki to obtain it</string>
@@ -897,10 +893,6 @@
     <string name="pure_task_mode_tips">When starting, it will directly enter the task center</string>
     <string name="debug_mode">Enable debug mode</string>
     <string name="debug_mode_tips">Save Log.* to file for troubleshooting; export to download directory.</string>
-    <string name="optional_components">Opt.:</string>
-    <string name="enable_cactus">Enable Cactus Keep Alive</string>
-    <string name="enable_cactus_tips">Dual foreground service/JobScheduler/WorkManager/1px/silent music</string>
-    <string name="music_interval">Wakeup Interval</string>
     <string name="load_app_list">Get installed app info async at startup</string>
     <string name="load_app_list_tips">Used to speed up entering the application list/editing forwarding rules drop-down selection/replacement {{APP_NAME}}</string>
     <string name="load_app_list_toast">A type must be selected when enabling asynchronous loading of the list of installed apps</string>

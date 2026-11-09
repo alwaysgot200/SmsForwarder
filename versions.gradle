@@ -6,12 +6,14 @@ build_versions.version_code = 60
 build_versions.version_name = "3.5.5"
 build_versions.min_sdk = 19
 build_versions.target_sdk = 33
-build_versions.build_tools = "33.0.1"
+//compileSdk 单独提升：Room 2.6.1 等新依赖要求 ≥34（本机 SDK 无 android-34，用 35）；targetSdk 保持 33 不改变运行时行为
+build_versions.compile_sdk = 35
+build_versions.build_tools = "35.0.0"
 ext.build_versions = build_versions
 
 ext.deps = [:]
 def versions = [:]
-versions.android_gradle_plugin = '7.2.2'
+versions.android_gradle_plugin = '8.13.0'
 versions.android_maven_gradle_plugin = "2.1"
 versions.gradle_bintray_plugin = "1.8.0"
 versions.booster = "3.1.0"
@@ -34,7 +36,7 @@ versions.gson = "2.10.1" //https://github.com/google/gson
 versions.okhttp3 = "3.12.13" //不可升级，为了支持 API 19
 versions.leakcanary = "2.14" //https://github.com/square/leakcanary
 versions.lifecycle = "2.2.0"
-versions.kotlin = '1.7.21'
+versions.kotlin = '1.9.25'
 
 //========xlibrary start========//
 
@@ -206,17 +208,12 @@ static def addRepos(RepositoryHandler handler) {
 
 ext.addRepos = this.&addRepos
 
-//自动添加XAOP和XRouter插件
+//自动添加kotlin插件（XAOP/XRouter 的 Transform 插件已随 AGP 8 移除：
+//XRouter 改用 runtime 的 dex 扫描回退注册，XAOP 改用 io.freefair aspectj 后编译织入）
 project.buildscript.configurations.each { configuration ->
     def dependencies = getProject().dependencies
     //noinspection ChangeToOperator
     if (configuration.name.equals("classpath")) {
-        //XAOP插件
-        configuration.dependencies.add(dependencies.create(deps.xlibrary.xaop_plugin))
-        //XRouter插件
-        configuration.dependencies.add(dependencies.create(deps.xlibrary.xrouter_plugin))
-        //AspectJX
-        //configuration.dependencies.add(dependencies.create('com.hujiang.aspectjx:gradle-android-plugin-aspectjx:2.0.10'))
         //kotlin插件
         configuration.dependencies.add(dependencies.create("org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"))
     }

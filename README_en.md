@@ -93,7 +93,6 @@ See more screenshots：https://github.com/pppscn/SmsForwarder/wiki
 + https://github.com/xuexiangjys/XUpdate (online update)
 + https://github.com/getActivity/XXPermissions (permission requiring)
 + https://github.com/mainfunx/frpc_android (reverse proxy)
-+ https://github.com/gyf-dev/Cactus (Keep Alive)
 + https://github.com/yanzhenjie/AndServer (HttpServer)
 + https://github.com/jenly1314/Location (Location)
 + https://gitee.com/xuankaicat/kmnkt (socket)
