@@ -267,9 +267,23 @@ class ForegroundService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        //用户从最近任务划掉应用时系统会随后杀进程：安排快速自愈检查，由看门狗拉起服务恢复转发
+        //用户从最近任务划掉应用：此刻进程仍存活而厂商系统随后才杀进程，
+        //第一时间原地重启前台服务，成功则通知几乎无感断线；
+        //无论成败都安排 3 秒看门狗复查（原地重启成功后进程再被杀、或 Android 12+ 拒绝后台启动时兜底）
         if (!SettingUtils.enablePureClientMode) {
-            KeepAliveUtils.scheduleServiceWatchdog(this, 3_000L)
+            try {
+                val intent = Intent(this, ForegroundService::class.java).setAction(ACTION_START)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+                Log.w(TAG, "onTaskRemoved：已原地重启前台服务")
+            } catch (e: Exception) {
+                Log.e(TAG, "onTaskRemoved：原地重启失败，退回看门狗自愈: ${e.message}")
+            } finally {
+                KeepAliveUtils.scheduleServiceWatchdog(this, 3_000L)
+            }
         }
         super.onTaskRemoved(rootIntent)
     }
@@ -279,9 +293,8 @@ class ForegroundService : Service() {
     }
 
     private fun startForegroundService() {
-        if (isRunning) return
-        isRunning = true
-
+        //每次 START 都先保证前台通知存在：onTaskRemoved 原地重启时 isRunning 仍为 true，
+        //若直接跳过 startForeground 会在 5 秒后触发 "did not then call startForeground" 崩溃
         val notification = createNotification(foregroundNotificationContent())
         //Android 14（API 34）起 startForeground 须传入前台服务类型（三参重载为 API 29+）；
         //SPECIAL_USE 位在 34 以下系统未定义，传入会抛 IllegalArgumentException，需按版本区分
@@ -290,6 +303,9 @@ class ForegroundService : Service() {
         } else {
             startForeground(FRONT_NOTIFY_ID, notification)
         }
+
+        if (isRunning) return
+        isRunning = true
 
         try {
             //开关通知监听服务
