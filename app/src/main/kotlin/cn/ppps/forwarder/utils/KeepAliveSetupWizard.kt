@@ -1,0 +1,176 @@
+package cn.ppps.forwarder.utils
+
+import android.app.Activity
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
+import cn.ppps.forwarder.R
+import com.xuexiang.xui.widget.dialog.materialdialog.DialogAction
+import com.xuexiang.xui.widget.dialog.materialdialog.MaterialDialog
+
+/**
+ * 首次启动保活设置向导：保活高于一切。
+ *
+ * 能自动授权的（精确闹钟 13+ 随安装自动授予、WAKE_LOCK 等 install-time 权限）
+ * 在安装时已自动生效；此向导只承载剩余必须人工操作的设置，
+ * 已完成的项目自动检测跳过，每步"一键直达"对应设置页，总步骤最少。
+ *
+ * 步骤按保活权重排序：忽略电池优化 → 精确闹钟 → 厂商自启动 → 厂商省电策略 →
+ * 通知使用权（系统强绑定锚点）→ 最近任务加锁说明。
+ * 从设置页返回后自动进入下一步（[onResumed] 驱动）；全部完成或用户跳过后不再打扰，
+ * 后续若仍发生"被杀未复苏"，由 [cn.ppps.forwarder.activity.MainActivity] 的心跳检测引导兜底。
+ */
+object KeepAliveSetupWizard {
+
+    //步骤常量（持久化用，不可变更）
+    private const val STEP_BATTERY = 1
+    private const val STEP_EXACT_ALARM = 2
+    private const val STEP_AUTOSTART = 3
+    private const val STEP_POWER_SAVE = 4
+    private const val STEP_NOTIFY_LISTEN = 5
+    private const val STEP_LOCK_TASK = 6
+
+    private const val SP_SETUP_DONE = "keepalive_setup_wizard_done"
+    private const val SP_SETUP_VISITED = "keepalive_setup_wizard_visited"
+
+    //从"去设置"跳出后置位，回到应用时据此推进下一步
+    private var waitingReturn = false
+
+    private data class Step(
+        val id: Int,
+        val titleRes: Int,
+        val messageRes: Int,
+        val goRes: Int,
+        val go: (Activity) -> Unit
+    )
+
+    fun isPending(activity: Activity): Boolean {
+        if (SettingUtils.enablePureClientMode) return false
+        var done: Boolean by SharedPreference(SP_SETUP_DONE, false)
+        return !done
+    }
+
+    /** 首启/未完成时进入向导；在权限授权流程结束后调用 */
+    fun maybeRun(activity: Activity) {
+        if (!isPending(activity)) return
+        showNextPending(activity)
+    }
+
+    /** 从厂商设置页返回后驱动下一步 */
+    fun onResumed(activity: Activity) {
+        if (!waitingReturn) return
+        waitingReturn = false
+        if (!isPending(activity)) return
+        showNextPending(activity)
+    }
+
+    private fun buildSteps(activity: Activity): List<Step> = buildList {
+        //1 忽略电池优化：防熄屏休眠断网，保活基石（系统授权框，点一下即可）
+        if (!KeepAliveUtils.isIgnoreBatteryOptimization(activity)) {
+            add(
+                Step(STEP_BATTERY, R.string.setup_wizard_battery_title, R.string.setup_wizard_battery_message, R.string.setup_wizard_go) {
+                    KeepAliveUtils.ignoreBatteryOptimization(it)
+                }
+            )
+        }
+        //2 精确闹钟：Android 13+ 已随安装自动授予（USE_EXACT_ALARM），通常自动跳过
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = activity.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                add(
+                    Step(STEP_EXACT_ALARM, R.string.setup_wizard_exact_alarm_title, R.string.setup_wizard_exact_alarm_message, R.string.setup_wizard_go) {
+                        it.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                )
+            }
+        }
+        //3 厂商自启动：划卡存活的开关（不可编程检测，"去过即算完成"）
+        add(
+            Step(STEP_AUTOSTART, R.string.setup_wizard_autostart_title, R.string.setup_wizard_autostart_message, R.string.setup_wizard_go) {
+                CommonUtils.startToAutoStartSetting(it)
+            }
+        )
+        //4 厂商省电策略：小米独立页面；其他厂商已在自启动页文案中一并提示
+        if (CommonUtils.isXiaomiFamily()) {
+            add(
+                Step(STEP_POWER_SAVE, R.string.setup_wizard_power_save_title, R.string.setup_wizard_power_save_message, R.string.setup_wizard_go) {
+                    CommonUtils.startToPowerSaveSetting(it)
+                }
+            )
+        }
+        //5 通知使用权：APP 通知转发功能 + 系统直接绑定的强保活锚点
+        if (!CommonUtils.isNotificationListenerServiceEnabled(activity)) {
+            add(
+                Step(STEP_NOTIFY_LISTEN, R.string.setup_wizard_notify_listen_title, R.string.setup_wizard_notify_listen_message, R.string.setup_wizard_go) {
+                    it.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            )
+        }
+        //6 收尾说明：最近任务加锁（无对应设置页可跳，纯指引）
+        add(
+            Step(STEP_LOCK_TASK, R.string.setup_wizard_lock_task_title, R.string.setup_wizard_lock_task_message, R.string.setup_wizard_ok) {
+            }
+        )
+    }
+
+    private fun showNextPending(activity: Activity) {
+        val steps = buildSteps(activity)
+        val visited = loadVisited(activity)
+        val pending = steps.filter { !visited.contains(it.id) }
+
+        if (pending.isEmpty()) {
+            finishWizard(activity)
+            return
+        }
+
+        val step = pending.first()
+        val content = StringBuilder(activity.getString(step.messageRes))
+        if (step.id == STEP_AUTOSTART) {
+            content.append("\n\n").append(CommonUtils.getAutoStartTips())
+        }
+        content.append("\n\n").append(activity.getString(R.string.setup_wizard_remain_hint, pending.size))
+
+        MaterialDialog.Builder(activity)
+            .title(step.titleRes)
+            .content(content)
+            .positiveText(step.goRes)
+            .onPositive { _: MaterialDialog?, _: DialogAction? ->
+                markVisited(activity, step.id)
+                if (step.id == STEP_LOCK_TASK) {
+                    //收尾步骤无跳转，直接结束
+                    finishWizard(activity)
+                } else {
+                    waitingReturn = true
+                    step.go(activity)
+                }
+            }
+            .negativeText(R.string.setup_wizard_skip)
+            .onNegative { _: MaterialDialog?, _: DialogAction? ->
+                //暂不：完成向导不再打扰；后续若真的发生"被杀未复苏"，心跳检测引导会再兜底
+                finishWizard(activity)
+            }
+            .cancelable(false)
+            .show()
+    }
+
+    private fun finishWizard(activity: Activity) {
+        var done: Boolean by SharedPreference(SP_SETUP_DONE, false)
+        done = true
+        Log.i(KeepAliveSetupWizard::class.java.simpleName, "保活设置向导完成")
+    }
+
+    private fun loadVisited(activity: Activity): MutableSet<Int> {
+        var raw: String by SharedPreference(SP_SETUP_VISITED, "")
+        return raw.split(",").mapNotNull { it.toIntOrNull() }.toMutableSet()
+    }
+
+    private fun markVisited(activity: Activity, stepId: Int) {
+        val visited = loadVisited(activity)
+        visited.add(stepId)
+        var raw: String by SharedPreference(SP_SETUP_VISITED, "")
+        raw = visited.joinToString(",")
+    }
+
+}

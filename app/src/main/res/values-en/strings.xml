@@ -373,6 +373,22 @@
     <string name="exact_alarm_setting">Allow Exact Alarms (Keep-alive)</string>
     <string name="kill_guide_go_auto_start">Enable Auto-start</string>
     <string name="kill_guide_go_power_save">Battery Settings</string>
+    <string name="setup_wizard_battery_title">Keep-alive step 1: Ignore battery optimization</string>
+    <string name="setup_wizard_battery_message">A system dialog will pop up — please choose Allow. This prevents the system from sleeping and cutting the network with the screen off.</string>
+    <string name="setup_wizard_exact_alarm_title">Keep-alive step 2: Allow exact alarms</string>
+    <string name="setup_wizard_exact_alarm_message">Please allow “Alarms &amp; reminders” on the page that opens, so the keep-alive watchdog can self-heal on time with the screen off.</string>
+    <string name="setup_wizard_autostart_title">Keep-alive step 3: Allow auto-start</string>
+    <string name="setup_wizard_autostart_message">Without auto-start, removing the app card from Recents fully wipes the app. Please allow auto-start on the page that opens.</string>
+    <string name="setup_wizard_power_save_title">Keep-alive step 4: Set battery saver to No restrictions</string>
+    <string name="setup_wizard_power_save_message">Please set this app’s battery saver policy to “No restrictions” on the page that opens, to avoid being frozen off-network with the screen off.</string>
+    <string name="setup_wizard_notify_listen_title">Keep-alive step 5: Enable notification access (recommended)</string>
+    <string name="setup_wizard_notify_listen_message">Used to forward APP notifications; this service is directly bound by the system — one of the strongest keep-alive anchors.</string>
+    <string name="setup_wizard_lock_task_title">Final step: Lock the app in Recents</string>
+    <string name="setup_wizard_lock_task_message">Open Recents, find this app’s card, pull it down and tap the lock icon. Locked cards cannot be swiped away — bulletproof keep-alive.</string>
+    <string name="setup_wizard_remain_hint">Keep-alive setup wizard: won’t bother you again once done, %1$d steps left</string>
+    <string name="setup_wizard_go">Go to Settings</string>
+    <string name="setup_wizard_skip">Not now</string>
+    <string name="setup_wizard_ok">Got it</string>
     <string name="kill_guide_title">The app was fully stopped by the system</string>
     <string name="kill_guide_message">The app was background-cleaned by the system last time and could not auto-recover (on some vendors, removing the app card from Recents acts like Force Stop and cancels all recovery mechanisms). Please enable the following to keep SMS forwarding alive:
 1. Auto-start → Allow

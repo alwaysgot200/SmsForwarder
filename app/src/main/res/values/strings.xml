@@ -404,6 +404,22 @@
     <string name="exact_alarm_setting">允许精确闹钟（保活加固）</string>
     <string name="kill_guide_go_auto_start">去开启自启动</string>
     <string name="kill_guide_go_power_save">省电策略设置</string>
+    <string name="setup_wizard_battery_title">保活第 1 步：忽略电池优化</string>
+    <string name="setup_wizard_battery_message">系统即将弹出授权框，请选择“允许”。此项能防止熄屏后系统休眠断网导致转发延迟。</string>
+    <string name="setup_wizard_exact_alarm_title">保活第 2 步：允许精确闹钟</string>
+    <string name="setup_wizard_exact_alarm_message">请在打开的页面中允许“闹钟和提醒”，保活看门狗才能熄屏准点自愈。</string>
+    <string name="setup_wizard_autostart_title">保活第 3 步：允许自启动</string>
+    <string name="setup_wizard_autostart_message">未开自启动时，划掉任务卡片会彻底清除本应用。请在打开的页面中将本应用设为允许自启动。</string>
+    <string name="setup_wizard_power_save_title">保活第 4 步：省电策略设为无限制</string>
+    <string name="setup_wizard_power_save_message">请在打开的页面中将本应用的省电策略改为“无限制”，避免熄屏后被冻结断网。</string>
+    <string name="setup_wizard_notify_listen_title">保活第 5 步：开启通知使用权（推荐）</string>
+    <string name="setup_wizard_notify_listen_message">用于转发 APP 通知；该服务由系统直接绑定运行，是最强的保活锚点之一。</string>
+    <string name="setup_wizard_lock_task_title">保活最后一步：最近任务加锁</string>
+    <string name="setup_wizard_lock_task_message">打开最近任务界面，找到本应用卡片，下拉卡片点击锁图标加锁。锁定的卡片无法被划掉，保活万无一失。</string>
+    <string name="setup_wizard_remain_hint">保活设置向导：完成后不再打扰，剩余 %1$d 步</string>
+    <string name="setup_wizard_go">去设置</string>
+    <string name="setup_wizard_skip">暂不</string>
+    <string name="setup_wizard_ok">知道了</string>
     <string name="kill_guide_title">检测到应用曾被系统彻底停止</string>
     <string name="kill_guide_message">应用上次运行期间被系统后台清理且未能自动恢复（部分厂商的“划卡清理”等同强制停止，会取消所有自动恢复机制）。请开启以下权限以保证短信转发持续可用：
 1. 自启动管理 → 允许自启动

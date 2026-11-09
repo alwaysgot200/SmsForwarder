@@ -43,6 +43,7 @@ import cn.ppps.forwarder.utils.CommonUtils.Companion.restartApplication
 import cn.ppps.forwarder.utils.EVENT_LOAD_APP_LIST
 import cn.ppps.forwarder.utils.FRPC_LIB_DOWNLOAD_URL
 import cn.ppps.forwarder.utils.FRPC_LIB_VERSION
+import cn.ppps.forwarder.utils.KeepAliveSetupWizard
 import cn.ppps.forwarder.utils.KeepAliveUtils
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
@@ -109,24 +110,19 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
         //引导用户完成厂商侧后台设置（自启动/省电策略），24小时内最多提示一次
         checkKillRecoveryGuide()
 
-        //检查通知权限是否获取
+        //首装批量授权：短信收/读/发、电话状态、通话记录、联系人、通知——一次对话框全部勾完
         XXPermissions.with(this)
+            .permission(PermissionLists.getReceiveSmsPermission())
+            .permission(PermissionLists.getReadSmsPermission())
+            .permission(PermissionLists.getSendSmsPermission())
+            .permission(PermissionLists.getReadPhoneStatePermission())
+            .permission(PermissionLists.getReadCallLogPermission())
+            .permission(PermissionLists.getReadContactsPermission())
             .permission(PermissionLists.getNotificationServicePermission())
             .permission(PermissionLists.getPostNotificationsPermission())
             .request(object : OnPermissionCallback {
                 override fun onResult(grantedList: MutableList<IPermission>, deniedList: MutableList<IPermission>) {
-                    val allGranted = deniedList.isEmpty()
-                    if (!allGranted) {
-                        //Android 13+ 通知权限被拒时前台服务照常运行但通知不可见，用户易误以为未在运行：
-                        //被"不再询问"永久拒绝时引导跳转权限设置页补授权（否则系统授权框不再弹出）；
-                        //普通拒绝下次启动会再次弹出系统授权框，持续引导
-                        if (XXPermissions.isDoNotAskAgainPermissions(getTopActivity(), deniedList)) {
-                            XXPermissions.startPermissionActivity(getContext(), deniedList)
-                        }
-                        XToastUtils.error(R.string.tips_notification)
-                        return
-                    }
-                    //启动前台服务
+                    //保活高于一切：无论权限是否全部授予，前台服务必须启动（通知权限只影响通知可见性）
                     if (!ForegroundService.isRunning) {
                         val serviceIntent = Intent(getTopActivity(), ForegroundService::class.java)
                         serviceIntent.action = ACTION_START
@@ -136,6 +132,16 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
                             startService(serviceIntent)
                         }
                     }
+                    if (deniedList.isNotEmpty()) {
+                        //Android 13+ 通知权限被拒时前台服务照常运行但通知不可见，用户易误以为未在运行：
+                        //被"不再询问"永久拒绝时引导跳转权限设置页补授权（否则系统授权框不再弹出）
+                        if (XXPermissions.isDoNotAskAgainPermissions(getTopActivity(), deniedList)) {
+                            XXPermissions.startPermissionActivity(getContext(), deniedList)
+                        }
+                        XToastUtils.error(R.string.tips_notification)
+                    }
+                    //首启保活设置向导：能自动授权的已随安装生效，此处按优先级引导剩余人工步骤
+                    KeepAliveSetupWizard.maybeRun(this@MainActivity)
                 }
             })
 
@@ -319,6 +325,12 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
             POS_HELP -> AgentWebActivity.goWeb(this, getString(R.string.url_help))
             POS_ABOUT -> openNewPage(AboutFragment::class.java)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        //从厂商设置页返回后，继续保活设置向导的下一步
+        KeepAliveSetupWizard.onResumed(this)
     }
 
     //被杀未复苏检测：上次看门狗心跳断档超过阈值，说明曾被厂商系统力停清理且未能自动恢复，
