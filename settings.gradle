@@ -1,11 +1,22 @@
 //插件解析仓库：freefair 等插件会传递依赖 AGP，需 google() 提供
+//与 build.gradle 的 allprojects 同一套"构建环境自适应"策略：
+//- CI（GitHub Actions，直连官方源稳定）：google/mavenCentral 优先，避免去撞偶发 502 的 aliyun
+//- 本地（国内）：aliyun 镜像加速
 pluginManagement {
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        google()
-        mavenCentral()
-        gradlePluginPortal()
+        if (System.getenv("CI")) {
+            google()
+            mavenCentral()
+            gradlePluginPortal()
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+        } else {
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            google()
+            mavenCentral()
+            gradlePluginPortal()
+        }
     }
 }
 

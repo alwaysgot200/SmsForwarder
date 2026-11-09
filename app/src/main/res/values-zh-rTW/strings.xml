@@ -729,7 +729,6 @@
     <string name="auto_start_samsung"><![CDATA[三星手機：自動運行應用程序 -> 打開應用開關 -> 電池管理 -> 未監視的應用程序 -> 添加應用]]></string>
     <string name="auto_start_letv"><![CDATA[樂視手機：自啟動管理 -> 允許應用自啟動]]></string>
     <string name="auto_start_smartisan"><![CDATA[鎚子手機：權限管理 -> 自啟動權限管理 -> 點擊應用 -> 允許被系統啟動]]></string>
-    <string name="need_to_restart">需要手動重新啟動APP，才能生效該配置項</string>
 
     <string name="http_server_running">HttpServer運行中，監聽：%1$s：%2$d</string>
     <string name="http_server_stopped">HttpServer已停止</string>

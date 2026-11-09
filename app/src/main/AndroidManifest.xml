@@ -319,7 +319,7 @@
             tools:ignore="IntentFilterExportedReceiver">
             <intent-filter android:priority="2147483647">
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.USER_PRESENT" />
+                <!--USER_PRESENT 无法送达 manifest 接收器（只能动态注册），解锁自愈由动态注册的 LockScreenReceiver 负责 -->
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>

@@ -728,7 +728,6 @@
     <string name="auto_start_samsung"><![CDATA[SamSung: Autorun apps -> turn on app switch -> battery management -> unmonitored apps -> add apps]]></string>
     <string name="auto_start_letv"><![CDATA[LeTv: Self-starting management -> Allow applications to self-start]]></string>
     <string name="auto_start_smartisan"><![CDATA[Smartisan: Permission management -> Self-starting permission management -> Click Apply -> Allow to be activated by the system]]></string>
-    <string name="need_to_restart">The APP needs to be restarted for this configuration item to take effect</string>
 
     <string name="http_server_running">HttpServer is running! On %1$s:%2$d</string>
     <string name="http_server_stopped">HttpServer is stopped!</string>

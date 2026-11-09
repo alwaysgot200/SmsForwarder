@@ -3,14 +3,15 @@ package cn.ppps.forwarder.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import cn.ppps.forwarder.service.ForegroundService
-import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
 
-@Suppress("PrivatePropertyName")
+/**
+ * 开机/覆盖更新自愈：两者均为系统豁免场景，直接拉起前台服务恢复转发。
+ *
+ * 注意：解锁自愈（ACTION_USER_PRESENT）只能动态注册接收（系统不向 manifest
+ * 声明的接收器投递），由 App 中动态注册的 [LockScreenReceiver] 负责。
+ */
 class BootCompletedReceiver : BroadcastReceiver() {
-
-    private val TAG = BootCompletedReceiver::class.java.simpleName
 
     override fun onReceive(context: Context, intent: Intent?) {
 
@@ -27,14 +28,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 //应用覆盖更新后闹钟与延迟任务被系统清空：直接拉起前台服务并重建看门狗心跳
                 //（不弹启动界面，更新后静默恢复）
                 if (!SettingUtils.enablePureClientMode) {
-                    KeepAliveReceiver.restartForegroundService(context)
-                }
-            }
-
-            Intent.ACTION_USER_PRESENT -> {
-                //解锁自愈：厂商系统查杀进程后，用户解锁时第一时间恢复前台服务（后台启动受限时静默，由看门狗兜底）
-                if (!SettingUtils.enablePureClientMode && !ForegroundService.isRunning) {
-                    Log.w(TAG, "解锁自愈：前台服务未运行，重新拉起")
                     KeepAliveReceiver.restartForegroundService(context)
                 }
             }
