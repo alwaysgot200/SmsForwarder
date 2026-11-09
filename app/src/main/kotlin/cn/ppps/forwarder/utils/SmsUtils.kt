@@ -2,14 +2,10 @@ package cn.ppps.forwarder.utils
 
 import android.content.Context
 import android.net.Uri
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.google.gson.Gson
 import com.xuexiang.xutil.security.CipherUtils
 import cn.ppps.forwarder.core.Core
 import cn.ppps.forwarder.entity.MsgInfo
-import cn.ppps.forwarder.workers.SendWorker
 
 /**
  * 短信数据源统一处理：发件人解析（取号回退链）、短信库回查、多入口统一去重分发
@@ -122,12 +118,8 @@ object SmsUtils {
             saveDedupRecords(records)
         }
 
-        val request = OneTimeWorkRequestBuilder<SendWorker>().setInputData(
-            workDataOf(
-                Worker.SEND_MSG_INFO to Gson().toJson(msgInfo)
-            )
-        ).build()
-        WorkManager.getInstance(context).enqueue(request)
+        //统一经 SendUtils.sendMsg 立即转发（WorkManager 直接入队在 Doze 下会被推迟到维护窗口，导致熄屏不转发）
+        SendUtils.sendMsg(context, msgInfo)
     }
 
     //消息指纹：类型 + 归一化内容

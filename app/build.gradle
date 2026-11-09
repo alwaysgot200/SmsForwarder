@@ -394,10 +394,6 @@ dependencies {
     //OpenKeychain OpenPGP API：https://github.com/open-keychain/openpgp-api
     implementation 'org.sufficientlysecure:openpgp-api:10.0'
 
-    //Android Keep Alive(安卓保活)，Cactus 集成双进程前台服务，JobScheduler，onePix(一像素)，WorkManager，无声音乐
-    //https://github.com/gyf-dev/Cactus
-    implementation 'com.gyf.cactus:cactus:1.1.3-beta13'
-
     //HTTP服务器：https://github.com/yanzhenjie/AndServer
     implementation 'cn.ppps.andserver:api:2.1.12'
     kapt 'cn.ppps.andserver:processor:2.1.12'

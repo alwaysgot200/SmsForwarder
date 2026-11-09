@@ -6,18 +6,13 @@ import android.content.ComponentName
 import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import cn.ppps.forwarder.core.Core
 import cn.ppps.forwarder.database.entity.Rule
 import cn.ppps.forwarder.entity.MsgInfo
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.PACKAGE_NAME
+import cn.ppps.forwarder.utils.SendUtils
 import cn.ppps.forwarder.utils.SettingUtils
-import cn.ppps.forwarder.utils.Worker
-import cn.ppps.forwarder.workers.SendWorker
-import com.google.gson.Gson
 import com.xuexiang.xrouter.utils.TextUtils
 import com.xuexiang.xutil.display.ScreenUtils
 import java.util.Date
@@ -125,12 +120,8 @@ class NotificationService : NotificationListenerService() {
                 }
             }
 
-            val request = OneTimeWorkRequestBuilder<SendWorker>().setInputData(
-                workDataOf(
-                    Worker.SEND_MSG_INFO to Gson().toJson(msgInfo),
-                )
-            ).build()
-            WorkManager.getInstance(applicationContext).enqueue(request)
+            //统一经 SendUtils.sendMsg 立即转发，避免熄屏 Doze 下 WorkManager 被推迟导致补发延迟
+            SendUtils.sendMsg(applicationContext, msgInfo)
 
         } catch (e: Exception) {
             Log.e(TAG, "Parsing Notification failed: " + e.message.toString())

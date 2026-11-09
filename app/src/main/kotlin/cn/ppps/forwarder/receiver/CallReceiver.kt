@@ -1,19 +1,14 @@
 package cn.ppps.forwarder.receiver
 
 import android.content.Context
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.google.gson.Gson
 import cn.ppps.forwarder.App.Companion.CALL_TYPE_MAP
 import cn.ppps.forwarder.R
 import cn.ppps.forwarder.entity.CallInfo
 import cn.ppps.forwarder.entity.MsgInfo
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.PhoneUtils
+import cn.ppps.forwarder.utils.SendUtils
 import cn.ppps.forwarder.utils.SettingUtils
-import cn.ppps.forwarder.utils.Worker
-import cn.ppps.forwarder.workers.SendWorker
 import com.xuexiang.xrouter.utils.TextUtils
 import com.xuexiang.xutil.resource.ResUtils.getString
 import java.util.Date
@@ -83,12 +78,8 @@ open class CallReceiver : PhoneStateReceiver() {
         msg.append(CALL_TYPE_MAP[callType.toString()] ?: getString(R.string.unknown_call))
 
         val msgInfo = MsgInfo("call", phoneNumber.toString(), msg.toString(), Date(), "", -1, 0, callType)
-        val request = OneTimeWorkRequestBuilder<SendWorker>().setInputData(
-            workDataOf(
-                Worker.SEND_MSG_INFO to Gson().toJson(msgInfo)
-            )
-        ).build()
-        WorkManager.getInstance(context).enqueue(request)
+        //统一经 SendUtils.sendMsg 立即转发，避免熄屏 Doze 下 WorkManager 被推迟导致补发延迟
+        SendUtils.sendMsg(context, msgInfo)
     }
 
     //转发通话记录
@@ -128,12 +119,8 @@ open class CallReceiver : PhoneStateReceiver() {
         }
 
         val msgInfo = MsgInfo("call", callInfo.number, PhoneUtils.getCallMsg(callInfo), Date(), simInfo, simSlot, callInfo.subId, callType)
-        val request = OneTimeWorkRequestBuilder<SendWorker>().setInputData(
-            workDataOf(
-                Worker.SEND_MSG_INFO to Gson().toJson(msgInfo)
-            )
-        ).build()
-        WorkManager.getInstance(context).enqueue(request)
+        //统一经 SendUtils.sendMsg 立即转发，避免熄屏 Doze 下 WorkManager 被推迟导致补发延迟
+        SendUtils.sendMsg(context, msgInfo)
 
     }
 

@@ -373,6 +373,8 @@
     <string name="custom_template_tips">Tip：按需插入内容标签；留空使用默认模版</string>
     <string name="insert_sender">来源号码</string>
     <string name="battery_setting">忽略电池优化设置</string>
+    <string name="exact_alarm_setting">允许精确闹钟（保活加固）</string>
+    <string name="exact_alarm_setting_tips">请允许“闹钟和提醒”特殊权限：熄屏下保活心跳准点触发，应用被杀后可第一时间拉起</string>
     <string name="battery_setting_tips">请设置为手动管理：允许自启动、允许关联启动、允许后台运行</string>
     <string name="unknown_number">未知号码</string>
     <string name="unknown_area">未知归属地</string>
@@ -725,7 +727,7 @@
     <string name="auto_start_huawei"><![CDATA[华为手机：应用启动管理 -> 关闭应用开关 -> 打开允许自启动]]></string>
     <string name="auto_start_honor"><![CDATA[荣耀手机：应用启动管理 -> 关闭应用开关 -> 打开允许自启动]]></string>
     <string name="auto_start_xiaomi"><![CDATA[小米手机：授权管理 -> 自启动管理 -> 允许应用自启动]]></string>
-    <string name="auto_start_oppo"><![CDATA[OPPO手机：权限隐私 -> 自启动管理 -> 允许应用自启动]]></string>
+    <string name="auto_start_oppo"><![CDATA[OPPO手机（ColorOS）：1.权限隐私 -> 自启动管理 -> 允许自启动；2.设置 -> 电池 -> 更多设置（或耗电管理）-> 允许应用完全后台行为；3.最近任务界面下拉/长按应用卡片加锁]]></string>
     <string name="auto_start_vivo"><![CDATA[vivo手机：权限管理 -> 自启动 -> 允许应用自启动]]></string>
     <string name="auto_start_meizu"><![CDATA[魅族手机：权限管理 -> 后台管理 -> 点击应用 -> 允许后台运行]]></string>
     <string name="auto_start_samsung"><![CDATA[三星手机：自动运行应用程序 -> 打开应用开关 -> 电池管理 -> 未监视的应用程序 -> 添加应用]]></string>

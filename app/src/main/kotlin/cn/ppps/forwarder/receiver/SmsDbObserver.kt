@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.HandlerThread
 import cn.ppps.forwarder.entity.MsgInfo
+import cn.ppps.forwarder.utils.ForwardWakeLock
 import cn.ppps.forwarder.utils.HistoryUtils
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
@@ -68,6 +69,9 @@ class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
     }
 
     override fun onChange(selfChange: Boolean, uri: Uri?) {
+        //熄屏 Doze 下 CPU 休眠会把防抖与扫描推迟到维护窗口，持短唤醒锁保证补漏链路及时执行
+        //（覆盖 2 秒防抖 + 扫描；随后的转发由 SendUtils.sendMsg 持自己的唤醒锁）
+        ForwardWakeLock.acquire("sms_db_scan", 60_000L)
         handler.removeCallbacks(scanRunnable)
         handler.postDelayed(scanRunnable, DEBOUNCE_MS)
     }

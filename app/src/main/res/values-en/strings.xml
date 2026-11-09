@@ -372,6 +372,8 @@
     <string name="custom_template_tips">Tip: Insert labels as needed; Leave blank to apply default template</string>
     <string name="insert_sender">Phone</string>
     <string name="battery_setting">Battery Optimization</string>
+    <string name="exact_alarm_setting">Allow Exact Alarms (Keep-alive)</string>
+    <string name="exact_alarm_setting_tips">Grant the \"Alarms &amp; reminders\" special access so the keep-alive heartbeat fires on time with the screen off</string>
     <string name="battery_setting_tips">Set it to manual management, including automatic startup, associated startup, and background running</string>
     <string name="unknown_number">Unknown Number</string>
     <string name="unknown_area">Unknown Area</string>
@@ -724,7 +726,7 @@
     <string name="auto_start_huawei"><![CDATA[Huawei: Application startup management -> turn off the application switch -> turn on allow self-starting]]></string>
     <string name="auto_start_honor"><![CDATA[Honor: Application startup management -> turn off the application switch -> turn on allow self-starting]]></string>
     <string name="auto_start_xiaomi"><![CDATA[XiaoMi: Authorization Management -> Self-Start Management -> Allow Apps to Self-Start]]></string>
-    <string name="auto_start_oppo"><![CDATA[OPPO: Permissions Privacy -> Self-Start Management -> Allow Apps to Self-Start]]></string>
+    <string name="auto_start_oppo"><![CDATA[OPPO (ColorOS): 1.Permissions & Privacy -> Auto-start -> Allow; 2.Settings -> Battery -> Advanced -> Allow full background behavior; 3.Lock the app card in Recents]]></string>
     <string name="auto_start_vivo"><![CDATA[VIVO: Permission Management -> Self-Start -> Allow Apps to Self-Start]]></string>
     <string name="auto_start_meizu"><![CDATA[MeiZu: Permission Management -> Background Management -> Click Apply -> Allow Background Running]]></string>
     <string name="auto_start_samsung"><![CDATA[SamSung: Autorun apps -> turn on app switch -> battery management -> unmonitored apps -> add apps]]></string>

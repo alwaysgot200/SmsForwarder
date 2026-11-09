@@ -1,6 +1,7 @@
 package cn.ppps.forwarder.utils
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -43,16 +44,58 @@ import cn.ppps.forwarder.utils.sender.WebhookUtils
 import cn.ppps.forwarder.utils.sender.WeworkAgentUtils
 import cn.ppps.forwarder.utils.sender.WeworkRobotUtils
 import cn.ppps.forwarder.workers.SendLogicWorker
+import cn.ppps.forwarder.workers.SendProcessor
 import cn.ppps.forwarder.workers.SendWorker
 import cn.ppps.forwarder.workers.UpdateLogsWorker
 import com.google.gson.Gson
 import com.jeremyliao.liveeventbus.LiveEventBus
 import com.xuexiang.xutil.XUtil
 import com.xuexiang.xutil.resource.ResUtils.getString
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 object SendUtils {
     private const val TAG = "SendUtils"
+
+    //转发唤醒锁超时：覆盖"发送器异步请求 + 重试"全程（超时时间 + 重试次数×(重试间隔+超时时间)）
+    private const val FORWARD_WAKE_LOCK_TIMEOUT_MS = 90_000L
+
+    //WorkManager 兜底任务延迟：立即执行成功后即取消；超时未取消说明立即路径失败或进程被杀，由其补发
+    private const val FORWARD_FALLBACK_DELAY_MS = 120_000L
+
+    /**
+     * 转发消息统一入口：唤醒锁内立即执行 + WorkManager 延迟兜底
+     *
+     * 熄屏进入 Doze 后 WorkManager 会被系统推迟到维护窗口（或退出 Doze）才执行，
+     * 导致熄屏期间消息不转发、解锁后才补发。故改为：
+     * 1. 先持唤醒锁（防止 CPU 休眠）并立即内联执行转发逻辑，发送器内部为异步IO，不阻塞调用方；
+     * 2. 同时入队一个延迟的 WorkManager 兜底任务，内联执行成功后取消；
+     *    内联执行抛异常或进程中途被杀则由兜底任务补发（宁重不漏）。
+     */
+    fun sendMsg(context: Context, msgInfo: MsgInfo) {
+        Log.d(TAG, "msgInfo = $msgInfo")
+
+        ForwardWakeLock.acquire("forward_msg", FORWARD_WAKE_LOCK_TIMEOUT_MS)
+
+        val fallbackRequest = OneTimeWorkRequestBuilder<SendWorker>()
+            .setInputData(workDataOf(Worker.SEND_MSG_INFO to Gson().toJson(msgInfo)))
+            .setInitialDelay(FORWARD_FALLBACK_DELAY_MS, TimeUnit.MILLISECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueue(fallbackRequest)
+
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                SendProcessor.process(msgInfo)
+                WorkManager.getInstance(context).cancelWorkById(fallbackRequest.id)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Log.e(TAG, "立即转发失败，等待兜底任务补发: ${e.message}")
+            }
+        }
+    }
 
     //重新匹配规则并发送消息
     fun rematchSendMsg(item: MsgAndLogs) {

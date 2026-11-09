@@ -38,6 +38,7 @@ import cn.ppps.forwarder.utils.FRONT_NOTIFY_ID
 import cn.ppps.forwarder.utils.FlashUtils
 import cn.ppps.forwarder.utils.INTENT_FRPC_APPLY_FILE
 import cn.ppps.forwarder.utils.HttpServerUtils
+import cn.ppps.forwarder.utils.KeepAliveUtils
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
 import cn.ppps.forwarder.utils.TASK_CONDITION_CRON
@@ -224,6 +225,9 @@ class ForegroundService : Service() {
         //纯客户端模式
         if (SettingUtils.enablePureClientMode) return START_NOT_STICKY
 
+        //确保看门狗心跳链持续（覆盖式替换，不会累积闹钟）
+        KeepAliveUtils.scheduleServiceWatchdog(this)
+
         if (intent != null) {
             when (intent.action) {
                 ACTION_START -> {
@@ -250,11 +254,23 @@ class ForegroundService : Service() {
 
     override fun onDestroy() {
         //非纯客户端模式
-        if (!SettingUtils.enablePureClientMode) stopForegroundService()
+        if (!SettingUtils.enablePureClientMode) {
+            stopForegroundService()
+            //服务被系统回收时安排延迟自愈（非立即重启，避免与系统查杀形成重启风暴）
+            KeepAliveUtils.scheduleServiceWatchdog(this, 30_000L)
+        }
         if (::flashUtils.isInitialized) {
             flashUtils.release()
         }
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        //用户从最近任务划掉应用时系统会随后杀进程：安排快速自愈检查，由看门狗拉起服务恢复转发
+        if (!SettingUtils.enablePureClientMode) {
+            KeepAliveUtils.scheduleServiceWatchdog(this, 3_000L)
+        }
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onBind(intent: Intent): IBinder? {

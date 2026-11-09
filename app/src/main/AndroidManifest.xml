@@ -30,6 +30,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!--精确闹钟（Android 13+ 安装即授予，看门狗心跳不受"默认拒绝"策略影响；自用侧载应用不涉及 Play 政策限制） -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
@@ -49,6 +51,8 @@
     <!--Android 9（API 级别 28）或更高版本并使用前台服务，则其必须请求 FOREGROUND_SERVICE 权限-->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!--转发链路临时唤醒锁：防止熄屏 Doze 下 CPU 休眠推迟转发 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.BATTERY_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -264,6 +268,11 @@
             </intent-filter>
         </service>
 
+        <!--保活看门狗：系统侧闹钟周期唤醒，检查并重新拉起前台服务（无需导出，仅接收本应用闹钟） -->
+        <receiver
+            android:name=".receiver.KeepAliveReceiver"
+            android:enabled="true"
+            android:exported="false" />
         <receiver
             android:name=".receiver.BatteryReceiver"
             android:exported="true">
@@ -305,6 +314,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.USER_PRESENT" />
                 <action android:name="android.intent.action.PACKAGE_RESTARTED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

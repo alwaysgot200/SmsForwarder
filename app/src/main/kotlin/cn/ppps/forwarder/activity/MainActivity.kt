@@ -103,17 +103,6 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
         initViews()
         initSlidingMenu(savedInstanceState)
 
-        //不在最近任务列表中显示
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SettingUtils.enableExcludeFromRecents) {
-            val am = App.context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            am.let {
-                val tasks = it.appTasks
-                if (!tasks.isNullOrEmpty()) {
-                    tasks[0].setExcludeFromRecents(true)
-                }
-            }
-        }
-
         //检查通知权限是否获取
         XXPermissions.with(this)
             .permission(PermissionLists.getNotificationServicePermission())

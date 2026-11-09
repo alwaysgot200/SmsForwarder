@@ -27,6 +27,9 @@ const val ACTION_STOP_ALARM = "STOP_ALARM"
 const val ACTION_UPDATE_NOTIFICATION = "UPDATE_NOTIFICATION"
 const val EXTRA_UPDATE_NOTIFICATION = "EXTRA_UPDATE_NOTIFICATION"
 
+//保活看门狗
+const val ACTION_KEEPALIVE_CHECK = "KEEPALIVE_CHECK"
+
 //初始化相关
 const val AUTO_CHECK_UPDATE = "auto_check_update"
 const val JOIN_PREVIEW_PROGRAM = "join_preview_program"
@@ -66,11 +69,6 @@ const val SP_SILENT_PERIOD_START = "silent_period_start"
 const val SP_SILENT_PERIOD_END = "silent_period_end"
 const val SP_ENABLE_SILENT_PERIOD_LOGS = "enable_silent_period_logs"
 
-const val SP_ENABLE_EXCLUDE_FROM_RECENTS = "enable_exclude_from_recents"
-const val SP_ENABLE_PLAY_SILENCE_MUSIC = "enable_play_silence_music"
-const val SP_ENABLE_ONE_PIXEL_ACTIVITY = "enable_one_pixel_activity"
-const val SP_MUSIC_INTERVAL = "music_interval"
-
 const val SP_REQUEST_RETRY_TIMES = "request_retry_times"
 const val SP_REQUEST_DELAY_TIME = "request_delay_time"
 const val SP_REQUEST_TIMEOUT = "request_timeout"
@@ -98,12 +96,6 @@ const val SP_LOCATION_MIN_DISTANCE = "location_min_distance"
 const val SP_BLUETOOTH = "enable_bluetooth"
 const val SP_BLUETOOTH_SCAN_INTERVAL = "bluetooth_scan_interval"
 const val SP_BLUETOOTH_IGNORE_ANONYMOUS = "bluetooth_ignore_anonymous"
-
-const val SP_ENABLE_CACTUS = "enable_cactus"
-const val CACTUS_TIMER = "cactus_timer"
-const val CACTUS_LAST_TIMER = "cactus_last_timer"
-const val CACTUS_DATE = "cactus_date"
-const val CACTUS_END_DATE = "cactus_end_date"
 
 //规则相关
 const val STATUS_ON = 1

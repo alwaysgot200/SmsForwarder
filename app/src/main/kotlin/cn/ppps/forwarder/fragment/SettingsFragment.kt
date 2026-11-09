@@ -2,6 +2,7 @@ package cn.ppps.forwarder.fragment
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.AlarmManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -176,10 +177,8 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
         checkWithReboot(binding!!.sbWithReboot, binding!!.tvAutoStartup)
         //忽略电池优化设置
         batterySetting(binding!!.layoutBatterySetting, binding!!.sbBatterySetting)
-        //不在最近任务列表中显示
-        switchExcludeFromRecents(binding!!.layoutExcludeFromRecents, binding!!.sbExcludeFromRecents)
-        //Cactus增强保活措施
-        switchEnableCactus(binding!!.sbEnableCactus, binding!!.scbPlaySilenceMusic, binding!!.scbOnePixelActivity, binding!!.layoutMusicInterval, binding!!.xsbMusicInterval)
+        //允许精确闹钟（保活加固）
+        exactAlarmSetting(binding!!.layoutExactAlarm, binding!!.sbExactAlarm)
         //接口请求失败重试时间间隔
         editRetryDelayTime(binding!!.xsbRetryTimes, binding!!.xsbDelayTime, binding!!.xsbTimeout)
 
@@ -910,66 +909,33 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
         }
     }
 
-    //不在最近任务列表中显示
-    @SuppressLint("ObsoleteSdkInt,UseSwitchCompatOrMaterialCode")
-    private fun switchExcludeFromRecents(layoutExcludeFromRecents: LinearLayout, sbExcludeFromRecents: SwitchButton) {
-        //安卓6.0以下没有不在最近任务列表中显示
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            layoutExcludeFromRecents.visibility = View.GONE
+    //允许精确闹钟（保活看门狗准点触发）
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    private fun exactAlarmSetting(layoutExactAlarm: LinearLayout, sbExactAlarm: SwitchButton) {
+        //Android 12 以下没有精确闹钟特殊权限，无需设置
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            layoutExactAlarm.visibility = View.GONE
             return
         }
-        sbExcludeFromRecents.isChecked = SettingUtils.enableExcludeFromRecents
-        sbExcludeFromRecents.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-            SettingUtils.enableExcludeFromRecents = isChecked
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                val am = App.context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-                am.let {
-                    val tasks = it.appTasks
-                    if (!tasks.isNullOrEmpty()) {
-                        tasks[0].setExcludeFromRecents(true)
-                    }
+        layoutExactAlarm.visibility = View.VISIBLE
+
+        val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        sbExactAlarm.isChecked = alarmManager.canScheduleExactAlarms()
+        sbExactAlarm.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
+            if (isChecked && !alarmManager.canScheduleExactAlarms()) {
+                try {
+                    //跳转"闹钟和提醒"特殊权限页，返回后本页刷新开关状态
+                    startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                } catch (e: Exception) {
+                    XToastUtils.error(R.string.unsupport)
+                    sbExactAlarm.isChecked = false
                 }
-            }
-        }
-    }
-
-    //Cactus增强保活措施
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
-    private fun switchEnableCactus(sbEnableCactus: SwitchButton, scbPlaySilenceMusic: SmoothCheckBox, scbOnePixelActivity: SmoothCheckBox, layoutMusicInterval: LinearLayout, xsbMusicInterval: XSeekBar) {
-        val layoutCactusOptional: LinearLayout = binding!!.layoutCactusOptional
-        val isEnable: Boolean = SettingUtils.enableCactus
-        sbEnableCactus.isChecked = isEnable
-        layoutCactusOptional.visibility = if (isEnable) View.VISIBLE else View.GONE
-        layoutMusicInterval.visibility = if (isEnable && SettingUtils.enablePlaySilenceMusic) View.VISIBLE else View.GONE
-
-        sbEnableCactus.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-            layoutCactusOptional.visibility = if (isChecked) View.VISIBLE else View.GONE
-            layoutMusicInterval.visibility = if (isChecked && SettingUtils.enablePlaySilenceMusic) View.VISIBLE else View.GONE
-            SettingUtils.enableCactus = isChecked
-            XToastUtils.warning(getString(R.string.need_to_restart))
-        }
-
-        scbPlaySilenceMusic.isChecked = SettingUtils.enablePlaySilenceMusic
-        scbPlaySilenceMusic.setOnCheckedChangeListener { _: SmoothCheckBox, isChecked: Boolean ->
-            SettingUtils.enablePlaySilenceMusic = isChecked
-            layoutMusicInterval.visibility = if (isChecked) View.VISIBLE else View.GONE
-            XToastUtils.warning(getString(R.string.need_to_restart))
-        }
-
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            binding!!.layoutOnePixelActivity.visibility = View.VISIBLE
-        }
-        scbOnePixelActivity.isChecked = SettingUtils.enableOnePixelActivity
-        scbOnePixelActivity.setOnCheckedChangeListener { _: SmoothCheckBox, isChecked: Boolean ->
-            SettingUtils.enableOnePixelActivity = isChecked
-            XToastUtils.warning(getString(R.string.need_to_restart))
-        }
-
-        xsbMusicInterval.setDefaultValue(SettingUtils.musicInterval)
-        xsbMusicInterval.setOnSeekBarListener { _: XSeekBar?, newValue: Int ->
-            if (newValue != SettingUtils.musicInterval) {
-                SettingUtils.musicInterval = newValue
-                XToastUtils.warning(getString(R.string.need_to_restart))
+            } else if (isChecked) {
+                XToastUtils.info(R.string.isIgnored)
+            } else {
+                //已声明 USE_EXACT_ALARM 的版本此权限实际不可关闭，保持真实状态即可
+                XToastUtils.info(R.string.isIgnored2)
+                sbExactAlarm.isChecked = alarmManager.canScheduleExactAlarms()
             }
         }
     }

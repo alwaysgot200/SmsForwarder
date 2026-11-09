@@ -1173,10 +1173,11 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_exclude_from_recents"
+                android:id="@+id/layout_exact_alarm"
                 style="@style/BarStyle.Switch"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:visibility="gone">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -1187,20 +1188,21 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/enable_exclude_from_recents"
+                        android:text="@string/exact_alarm_setting"
                         android:textStyle="bold"
                         tools:ignore="RelativeOverlap" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/enable_exclude_from_recents_tips"
+                        android:text="@string/exact_alarm_setting_tips"
                         android:textSize="@dimen/text_size_mini"
                         tools:ignore="SmallSp" />
+
                 </LinearLayout>
 
                 <com.xuexiang.xui.widget.button.switchbutton.SwitchButton
-                    android:id="@+id/sb_exclude_from_recents"
+                    android:id="@+id/sb_exact_alarm"
                     style="@style/SwitchButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -1262,132 +1264,6 @@
 
                 <com.xuexiang.xui.widget.button.switchbutton.SwitchButton
                     android:id="@+id/sb_enable_accessibility_service"
-                    style="@style/SwitchButtonStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    tools:ignore="TouchTargetSizeCheck" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                style="@style/BarStyle.Switch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/enable_cactus"
-                        android:textStyle="bold"
-                        tools:ignore="RelativeOverlap" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/enable_cactus_tips"
-                        android:textSize="@dimen/text_size_mini"
-                        tools:ignore="SmallSp" />
-
-                    <LinearLayout
-                        android:id="@+id/layout_cactus_optional"
-                        android:layout_width="match_parent"
-                        android:layout_height="25dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/optional_components"
-                            android:textSize="@dimen/text_size_small"
-                            android:textStyle="bold"
-                            tools:ignore="SmallSp" />
-
-                        <com.xuexiang.xui.widget.button.SmoothCheckBox
-                            android:id="@+id/scb_play_silence_music"
-                            android:layout_width="15dp"
-                            android:layout_height="15dp"
-                            app:scb_color_checked="@color/colorPrimary" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/play_silence_music"
-                            android:textSize="@dimen/text_size_small"
-                            tools:ignore="SmallSp" />
-
-                        <LinearLayout
-                            android:id="@+id/layout_one_pixel_activity"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:visibility="gone">
-
-                            <com.xuexiang.xui.widget.button.SmoothCheckBox
-                                android:id="@+id/scb_one_pixel_activity"
-                                android:layout_width="15dp"
-                                android:layout_height="15dp"
-                                android:layout_marginStart="5dp"
-                                app:scb_color_checked="@color/colorPrimary" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/one_pixel_activity"
-                                android:textSize="@dimen/text_size_small"
-                                tools:ignore="SmallSp" />
-
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/layout_music_interval"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/music_interval"
-                            android:textSize="@dimen/text_size_small"
-                            android:textStyle="bold"
-                            tools:ignore="SmallSp" />
-
-                        <com.xuexiang.xui.widget.picker.XSeekBar
-                            android:id="@+id/xsb_music_interval"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:layout_weight="1"
-                            android:padding="0dp"
-                            app:xsb_max="300"
-                            app:xsb_min="1" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:text="@string/seconds"
-                            android:textSize="@dimen/text_size_small"
-                            android:textStyle="bold" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <com.xuexiang.xui.widget.button.switchbutton.SwitchButton
-                    android:id="@+id/sb_enable_cactus"
                     style="@style/SwitchButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
