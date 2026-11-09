@@ -34,8 +34,8 @@ class KeepAliveReceiver : BroadcastReceiver() {
             Log.d(TAG, "看门狗：前台服务运行中")
         }
 
-        //重排下一次心跳
-        KeepAliveUtils.scheduleServiceWatchdog(context)
+        //重排下一次心跳（灭屏短周期/亮屏常规周期自适应）
+        KeepAliveUtils.scheduleAdaptiveWatchdog(context)
     }
 
     companion object {

@@ -24,6 +24,11 @@ class KeepAliveUtils private constructor() {
         //看门狗心跳周期：厂商系统查杀后最迟一个周期内自愈；allow-while-idle 闹钟在 Doze 下仍触发
         const val WATCHDOG_INTERVAL_MS = 15 * 60 * 1000L
 
+        //灭屏期间的心跳周期：厂商熄屏查杀不会回调 onDestroy，只能等下轮心跳自愈，
+        //缩短周期以减小转发中断空窗（深度 Doze 下系统限制每应用约 9 分钟触发一次，
+        //请求 5 分钟会被系统自动节流到允许时机，不丢闹钟、不额外耗电）
+        const val WATCHDOG_INTERVAL_SCREEN_OFF_MS = 5 * 60 * 1000L
+
         fun isIgnoreBatteryOptimization(activity: Activity): Boolean {
             //安卓6.0以下没有忽略电池优化
             return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
@@ -98,6 +103,16 @@ class KeepAliveUtils private constructor() {
             } catch (e: SecurityException) {
                 Log.e(TAG, "安排看门狗心跳失败: ${e.message}")
             }
+        }
+
+        /**
+         * 按亮灭屏自适应安排看门狗心跳：灭屏期间厂商查杀风险高且短信转发延迟代价大，
+         * 用短周期；亮屏恢复常规周期。用于周期性重排（心跳触发后、应用启动时）。
+         */
+        fun scheduleAdaptiveWatchdog(context: Context) {
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            val interval = if (powerManager?.isInteractive == false) WATCHDOG_INTERVAL_SCREEN_OFF_MS else WATCHDOG_INTERVAL_MS
+            scheduleServiceWatchdog(context, interval)
         }
 
     }

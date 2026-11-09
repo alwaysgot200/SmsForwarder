@@ -8,7 +8,9 @@ import android.os.Build
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import cn.ppps.forwarder.utils.KeepAliveUtils
 import cn.ppps.forwarder.utils.Log
+import cn.ppps.forwarder.utils.SettingUtils
 import cn.ppps.forwarder.utils.TASK_CONDITION_LOCK_SCREEN
 import cn.ppps.forwarder.utils.TaskWorker
 import cn.ppps.forwarder.utils.task.TaskUtils
@@ -37,6 +39,18 @@ class LockScreenReceiver : BroadcastReceiver() {
             )
         ).build()
         WorkManager.getInstance(context).enqueue(request)
+
+        //保活联动：灭屏立即把看门狗心跳切到短周期（厂商熄屏查杀不回调 onDestroy，
+        //缩短只能等下轮心跳自愈的空窗）；亮屏恢复常规周期。覆盖式重排同一闹钟，无累积
+        if (!SettingUtils.enablePureClientMode) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF ->
+                    KeepAliveUtils.scheduleServiceWatchdog(context, KeepAliveUtils.WATCHDOG_INTERVAL_SCREEN_OFF_MS)
+
+                Intent.ACTION_SCREEN_ON ->
+                    KeepAliveUtils.scheduleServiceWatchdog(context)
+            }
+        }
     }
 
     private fun isDeviceLocked(context: Context?): Boolean {

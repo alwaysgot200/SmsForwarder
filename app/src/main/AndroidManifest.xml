@@ -50,6 +50,8 @@
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <!--Android 9（API 级别 28）或更高版本并使用前台服务，则其必须请求 FOREGROUND_SERVICE 权限-->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--Android 14（API 34）起前台服务须声明类型并请求对应细分权限；短信转发无专属类型，采用 specialUse-->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!--转发链路临时唤醒锁：防止熄屏 Doze 下 CPU 休眠推迟转发 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -248,7 +250,13 @@
             android:exported="false" />
         <service
             android:name=".service.ForegroundService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:foregroundServiceType="specialUse">
+            <!--Android 14+ 特殊用途前台服务须声明具体用途说明（targetSdk 33 下声明无害，升 34 时即生效）-->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="常驻短信/通知监听与转发服务，需持续后台运行以实时转发消息" />
+        </service>
         <service
             android:name=".service.HttpServerService"
             android:enabled="true" />

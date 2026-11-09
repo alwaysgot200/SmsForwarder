@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.AudioAttributes
@@ -282,7 +283,13 @@ class ForegroundService : Service() {
         isRunning = true
 
         val notification = createNotification(foregroundNotificationContent())
-        startForeground(FRONT_NOTIFY_ID, notification)
+        //Android 14（API 34）起 startForeground 须传入前台服务类型（三参重载为 API 29+）；
+        //SPECIAL_USE 位在 34 以下系统未定义，传入会抛 IllegalArgumentException，需按版本区分
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(FRONT_NOTIFY_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(FRONT_NOTIFY_ID, notification)
+        }
 
         try {
             //开关通知监听服务

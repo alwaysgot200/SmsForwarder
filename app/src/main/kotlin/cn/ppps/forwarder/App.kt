@@ -192,7 +192,8 @@ class App : Application(), Configuration.Provider by Core {
             }
 
             //启动保活看门狗心跳：进程被厂商系统查杀后由系统侧闹钟周期唤醒自愈
-            KeepAliveUtils.scheduleServiceWatchdog(this)
+            //（灭屏时直接用短周期：开机广播拉起阶段多处于灭屏，厂商查杀风险最高）
+            KeepAliveUtils.scheduleAdaptiveWatchdog(this)
 
             //WorkManager 周期看门狗：与闹钟看门狗互为冗余，重启/覆盖更新后自动恢复（KEEP 策略避免重复调度）
             val keepAliveRequest = PeriodicWorkRequestBuilder<KeepAliveWorker>(KeepAliveUtils.WATCHDOG_INTERVAL_MS, TimeUnit.MILLISECONDS).build()
