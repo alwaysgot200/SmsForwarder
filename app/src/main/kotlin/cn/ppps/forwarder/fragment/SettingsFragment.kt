@@ -862,7 +862,7 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
 
     //开机启动
     private fun checkWithReboot(@SuppressLint("UseSwitchCompatOrMaterialCode") sbWithReboot: SwitchButton, tvAutoStartup: TextView) {
-        tvAutoStartup.text = getAutoStartTips()
+        tvAutoStartup.text = CommonUtils.getAutoStartTips()
 
         //获取组件
         val cm = ComponentName(getAppPackageName(), BootCompletedReceiver::class.java.name)
@@ -873,7 +873,7 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
             try {
                 val newState = if (isChecked) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
                 pm.setComponentEnabledSetting(cm, newState, PackageManager.DONT_KILL_APP)
-                if (isChecked) startToAutoStartSetting(requireContext())
+                if (isChecked) CommonUtils.startToAutoStartSetting(requireContext())
             } catch (e: Exception) {
                 XToastUtils.error(e.message.toString())
             }
@@ -1178,184 +1178,6 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 startActivity(intent)
                 requireActivity().finish()
-            }
-        }
-    }
-
-    //获取当前手机品牌
-    private fun getAutoStartTips(): String {
-        return when (Build.BRAND.lowercase(Locale.ROOT)) {
-            "huawei" -> getString(R.string.auto_start_huawei)
-            "honor" -> getString(R.string.auto_start_honor)
-            "xiaomi" -> getString(R.string.auto_start_xiaomi)
-            "redmi" -> getString(R.string.auto_start_redmi)
-            "oppo" -> getString(R.string.auto_start_oppo)
-            "vivo" -> getString(R.string.auto_start_vivo)
-            "meizu" -> getString(R.string.auto_start_meizu)
-            "samsung" -> getString(R.string.auto_start_samsung)
-            "letv" -> getString(R.string.auto_start_letv)
-            "smartisan" -> getString(R.string.auto_start_smartisan)
-            else -> getString(R.string.auto_start_unknown)
-        }
-    }
-
-    //Intent跳转到[自启动]页面全网最全适配机型解决方案
-    private val hashMap = object : HashMap<String?, List<String?>?>() {
-        init {
-            put(
-                "Xiaomi", listOf(
-                    "com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity",  //MIUI10_9.8.1(9.0)
-                    "com.miui.securitycenter"
-                )
-            )
-            put(
-                "samsung", listOf(
-                    "com.samsung.android.sm_cn/com.samsung.android.sm.ui.ram.AutoRunActivity", "com.samsung.android.sm_cn/com.samsung.android.sm.ui.appmanagement.AppManagementActivity", "com.samsung.android.sm_cn/com.samsung.android.sm.ui.cstyleboard.SmartManagerDashBoardActivity", "com.samsung.android.sm_cn/.ui.ram.RamActivity", "com.samsung.android.sm_cn/.app.dashboard.SmartManagerDashBoardActivity", "com.samsung.android.sm/com.samsung.android.sm.ui.ram.AutoRunActivity", "com.samsung.android.sm/com.samsung.android.sm.ui.appmanagement.AppManagementActivity", "com.samsung.android.sm/com.samsung.android.sm.ui.cstyleboard.SmartManagerDashBoardActivity", "com.samsung.android.sm/.ui.ram.RamActivity", "com.samsung.android.sm/.app.dashboard.SmartManagerDashBoardActivity", "com.samsung.android.lool/com.samsung.android.sm.ui.battery.BatteryActivity", "com.samsung.android.sm_cn", "com.samsung.android.sm"
-                )
-            )
-            put(
-                "HUAWEI", listOf(
-                    "com.huawei.systemmanager/.startupmgr.ui.StartupNormalAppListActivity",  //EMUI9.1.0(方舟,9.0)
-                    "com.huawei.systemmanager/.appcontrol.activity.StartupAppControlActivity", "com.huawei.systemmanager/.optimize.process.ProtectActivity", "com.huawei.systemmanager/.optimize.bootstart.BootStartActivity", "com.huawei.systemmanager" //最后一行可以写包名, 这样如果签名的类路径在某些新版本的ROM中没找到 就直接跳转到对应的安全中心/手机管家 首页.
-                )
-            )
-            put(
-                "vivo", listOf(
-                    "com.iqoo.secure/.ui.phoneoptimize.BgStartUpManager", "com.iqoo.secure/.safeguard.PurviewTabActivity", "com.vivo.permissionmanager/.activity.BgStartUpManagerActivity",  //"com.iqoo.secure/.ui.phoneoptimize.AddWhiteListActivity", //这是白名单, 不是自启动
-                    "com.iqoo.secure", "com.vivo.permissionmanager"
-                )
-            )
-            put(
-                "Meizu", listOf(
-                    "com.meizu.safe/.permission.SmartBGActivity",  //Flyme7.3.0(7.1.2)
-                    "com.meizu.safe/.permission.PermissionMainActivity",  //网上的
-                    "com.meizu.safe"
-                )
-            )
-            put(
-                "OPPO", listOf(
-                    "com.coloros.safecenter/.startupapp.StartupAppListActivity", "com.coloros.safecenter/.permission.startup.StartupAppListActivity", "com.oppo.safe/.permission.startup.StartupAppListActivity", "com.coloros.oppoguardelf/com.coloros.powermanager.fuelgaue.PowerUsageModelActivity", "com.coloros.safecenter/com.coloros.privacypermissionsentry.PermissionTopActivity", "com.coloros.safecenter", "com.oppo.safe", "com.coloros.oppoguardelf"
-                )
-            )
-            put(
-                "oneplus", listOf(
-                    "com.oneplus.security/.chainlaunch.view.ChainLaunchAppListActivity", "com.oneplus.security"
-                )
-            )
-            put(
-                "letv", listOf(
-                    "com.letv.android.letvsafe/.AutobootManageActivity", "com.letv.android.letvsafe/.BackgroundAppManageActivity",  //应用保护
-                    "com.letv.android.letvsafe"
-                )
-            )
-            put(
-                "zte", listOf(
-                    "com.zte.heartyservice/.autorun.AppAutoRunManager", "com.zte.heartyservice"
-                )
-            )
-
-            //金立
-            put(
-                "F", listOf(
-                    "com.gionee.softmanager/.MainActivity", "com.gionee.softmanager"
-                )
-            )
-
-            //以下为未确定(厂商名也不确定)
-            put(
-                "smartisanos", listOf(
-                    "com.smartisanos.security/.invokeHistory.InvokeHistoryActivity", "com.smartisanos.security"
-                )
-            )
-
-            //360
-            put(
-                "360", listOf(
-                    "com.yulong.android.coolsafe/.ui.activity.autorun.AutoRunListActivity", "com.yulong.android.coolsafe"
-                )
-            )
-
-            //360
-            put(
-                "ulong", listOf(
-                    "com.yulong.android.coolsafe/.ui.activity.autorun.AutoRunListActivity", "com.yulong.android.coolsafe"
-                )
-            )
-
-            //酷派
-            put(
-                "coolpad" /*厂商名称不确定是否正确*/, listOf(
-                    "com.yulong.android.security/com.yulong.android.seccenter.tabbarmain", "com.yulong.android.security"
-                )
-            )
-
-            //联想
-            put(
-                "lenovo" /*厂商名称不确定是否正确*/, listOf(
-                    "com.lenovo.security/.purebackground.PureBackgroundActivity", "com.lenovo.security"
-                )
-            )
-            put(
-                "htc" /*厂商名称不确定是否正确*/, listOf(
-                    "com.htc.pitroad/.landingpage.activity.LandingPageActivity", "com.htc.pitroad"
-                )
-            )
-
-            //华硕
-            put(
-                "asus" /*厂商名称不确定是否正确*/, listOf(
-                    "com.asus.mobilemanager/.MainActivity", "com.asus.mobilemanager"
-                )
-            )
-        }
-    }
-
-    //跳转自启动页面
-    private fun startToAutoStartSetting(context: Context) {
-        Log.e("Util", "******************The current phone model is:" + Build.MANUFACTURER)
-        val entries: MutableSet<MutableMap.MutableEntry<String?, List<String?>?>> = hashMap.entries
-        var has = false
-        for ((manufacturer, actCompatList) in entries) {
-            if (Build.MANUFACTURER.equals(manufacturer, ignoreCase = true)) {
-                if (actCompatList != null) {
-                    for (act in actCompatList) {
-                        try {
-                            var intent: Intent?
-                            if (act?.contains("/") == true) {
-                                intent = Intent()
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                val componentName = ComponentName.unflattenFromString(act)
-                                intent.component = componentName
-                            } else {
-                                //找不到? 网上的做法都是跳转到设置... 这基本上是没意义的 基本上自启动这个功能是第三方厂商自己写的安全管家类app
-                                //所以我是直接跳转到对应的安全管家/安全中心
-                                intent = act?.let { context.packageManager.getLaunchIntentForPackage(it) }
-                            }
-                            context.startActivity(intent)
-                            has = true
-                            break
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            Log.e("Util", "******************e:" + e.message)
-                        }
-                    }
-                }
-            }
-        }
-        if (!has) {
-            XToastUtils.info(R.string.tips_compatible_solution)
-            try {
-                val intent = Intent()
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                intent.action = "android.settings.APPLICATION_DETAILS_SETTINGS"
-                intent.data = Uri.fromParts("package", context.packageName, null)
-                context.startActivity(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.e("Util", "******************e:" + e.message)
-                val intent = Intent(Settings.ACTION_SETTINGS)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
             }
         }
     }

@@ -27,6 +27,9 @@ class KeepAliveReceiver : BroadcastReceiver() {
         //纯客户端模式不保活
         if (SettingUtils.enablePureClientMode) return
 
+        //存活心跳：供应用启动时判断"曾被力停清理且未自动复苏"（心跳断档检测）
+        KeepAliveUtils.recordHeartbeat(context)
+
         if (!ForegroundService.isRunning) {
             Log.w(TAG, "看门狗：前台服务未运行，重新拉起")
             restartForegroundService(context)

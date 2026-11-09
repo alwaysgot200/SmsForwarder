@@ -372,6 +372,13 @@
     <string name="insert_sender">來源號碼</string>
     <string name="battery_setting">忽略電池優化設置</string>
     <string name="exact_alarm_setting">允許精確鬧鐘（保活加固）</string>
+    <string name="kill_guide_go_auto_start">去開啟自啟動</string>
+    <string name="kill_guide_go_power_save">省電策略設定</string>
+    <string name="kill_guide_title">偵測到應用曾被系統徹底停止</string>
+    <string name="kill_guide_message">應用上次執行期間被系統後台清理且未能自動恢復（部分廠商的「劃卡清理」等同強制停止，會取消所有自動恢復機制）。請開啟以下權限以保證簡訊轉發持續可用：
+1. 自啟動管理 → 允許自啟動
+2. 省電策略 → 無限制（小米）
+3. 最近任務中鎖定應用卡片</string>
     <string name="exact_alarm_setting_tips">請允許「鬧鐘和提醒」特殊權限：熄屏下保活心跳準點觸發，應用被殺後可第一時間拉起</string>
     <string name="battery_setting_tips">請設置為手動管理：允許自啟動、允許關聯啟動、允許後台運行</string>
     <string name="unknown_number">未知號碼</string>

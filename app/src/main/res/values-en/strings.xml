@@ -371,6 +371,13 @@
     <string name="insert_sender">Phone</string>
     <string name="battery_setting">Battery Optimization</string>
     <string name="exact_alarm_setting">Allow Exact Alarms (Keep-alive)</string>
+    <string name="kill_guide_go_auto_start">Enable Auto-start</string>
+    <string name="kill_guide_go_power_save">Battery Settings</string>
+    <string name="kill_guide_title">The app was fully stopped by the system</string>
+    <string name="kill_guide_message">The app was background-cleaned by the system last time and could not auto-recover (on some vendors, removing the app card from Recents acts like Force Stop and cancels all recovery mechanisms). Please enable the following to keep SMS forwarding alive:
+1. Auto-start → Allow
+2. Battery saver → No restrictions (Xiaomi)
+3. Lock the app card in Recents</string>
     <string name="exact_alarm_setting_tips">Grant the \"Alarms &amp; reminders\" special access so the keep-alive heartbeat fires on time with the screen off</string>
     <string name="battery_setting_tips">Set it to manual management, including automatic startup, associated startup, and background running</string>
     <string name="unknown_number">Unknown Number</string>

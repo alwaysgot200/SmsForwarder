@@ -29,6 +29,34 @@ class KeepAliveUtils private constructor() {
         //请求 5 分钟会被系统自动节流到允许时机，不丢闹钟、不额外耗电）
         const val WATCHDOG_INTERVAL_SCREEN_OFF_MS = 5 * 60 * 1000L
 
+        //存活心跳：看门狗每次触发时刷新。应用启动时若发现心跳断档超过阈值（≥2个看门狗周期），
+        //说明曾被厂商系统力停清理且未能自动复苏（如 HyperOS 划卡清理会取消应用的所有闹钟）
+        private const val HEARTBEAT_KEY = "keepalive_heartbeat_ts"
+        private const val KILL_GUIDE_KEY = "keepalive_kill_guide_ts"
+        private const val HEARTBEAT_STALL_MS = 30 * 60 * 1000L
+        private const val KILL_GUIDE_INTERVAL_MS = 24 * 60 * 60 * 1000L
+
+        fun recordHeartbeat(context: Context) {
+            var heartbeat: Long by SharedPreference(HEARTBEAT_KEY, 0L)
+            heartbeat = System.currentTimeMillis()
+        }
+
+        fun isUnrevivedKill(context: Context): Boolean {
+            var last: Long by SharedPreference(HEARTBEAT_KEY, 0L)
+            return last > 0L && System.currentTimeMillis() - last > HEARTBEAT_STALL_MS
+        }
+
+        fun shouldShowKillGuide(context: Context): Boolean {
+            var lastGuide: Long by SharedPreference(KILL_GUIDE_KEY, 0L)
+            return isUnrevivedKill(context) && System.currentTimeMillis() - lastGuide > KILL_GUIDE_INTERVAL_MS
+        }
+
+        fun markKillGuideShown(context: Context) {
+            var lastGuide: Long by SharedPreference(KILL_GUIDE_KEY, 0L)
+            lastGuide = System.currentTimeMillis()
+            recordHeartbeat(context)
+        }
+
         fun isIgnoreBatteryOptimization(activity: Activity): Boolean {
             //安卓6.0以下没有忽略电池优化
             return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {

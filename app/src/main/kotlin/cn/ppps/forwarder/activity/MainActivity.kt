@@ -38,10 +38,12 @@ import cn.ppps.forwarder.fragment.SettingsFragment
 import cn.ppps.forwarder.fragment.TasksFragment
 import cn.ppps.forwarder.service.ForegroundService
 import cn.ppps.forwarder.utils.ACTION_START
+import cn.ppps.forwarder.utils.CommonUtils
 import cn.ppps.forwarder.utils.CommonUtils.Companion.restartApplication
 import cn.ppps.forwarder.utils.EVENT_LOAD_APP_LIST
 import cn.ppps.forwarder.utils.FRPC_LIB_DOWNLOAD_URL
 import cn.ppps.forwarder.utils.FRPC_LIB_VERSION
+import cn.ppps.forwarder.utils.KeepAliveUtils
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
 import cn.ppps.forwarder.utils.XToastUtils
@@ -102,6 +104,10 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
         initData()
         initViews()
         initSlidingMenu(savedInstanceState)
+
+        //被杀未复苏检测：上次看门狗心跳断档超过阈值，说明曾被厂商系统力停清理且未能自动恢复，
+        //引导用户完成厂商侧后台设置（自启动/省电策略），24小时内最多提示一次
+        checkKillRecoveryGuide()
 
         //检查通知权限是否获取
         XXPermissions.with(this)
@@ -313,6 +319,30 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
             POS_HELP -> AgentWebActivity.goWeb(this, getString(R.string.url_help))
             POS_ABOUT -> openNewPage(AboutFragment::class.java)
         }
+    }
+
+    //被杀未复苏检测：上次看门狗心跳断档超过阈值，说明曾被厂商系统力停清理且未能自动恢复，
+    //引导用户完成厂商侧后台设置（自启动/省电策略），24小时内最多提示一次
+    private fun checkKillRecoveryGuide() {
+        if (SettingUtils.enablePureClientMode) return
+        if (!KeepAliveUtils.shouldShowKillGuide(this)) return
+        KeepAliveUtils.markKillGuideShown(this)
+
+        val builder = MaterialDialog.Builder(this)
+            .title(R.string.kill_guide_title)
+            .content(R.string.kill_guide_message)
+            .positiveText(R.string.kill_guide_go_auto_start)
+            .onPositive { _: MaterialDialog?, _: DialogAction? ->
+                CommonUtils.startToAutoStartSetting(this)
+            }
+            .negativeText(R.string.lab_no)
+        if (CommonUtils.isXiaomiFamily()) {
+            builder.neutralText(R.string.kill_guide_go_power_save)
+                .onNeutral { _: MaterialDialog?, _: DialogAction? ->
+                    CommonUtils.startToPowerSaveSetting(this)
+                }
+        }
+        builder.show()
     }
 
     private fun createItemFor(position: Int): DrawerItem<*> {
