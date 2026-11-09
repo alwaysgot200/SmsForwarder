@@ -70,8 +70,9 @@ class SmsDbObserver(private val context: Context) : ContentObserver(handler) {
 
     override fun onChange(selfChange: Boolean, uri: Uri?) {
         //熄屏 Doze 下 CPU 休眠会把防抖与扫描推迟到维护窗口，持短唤醒锁保证补漏链路及时执行
-        //（覆盖 2 秒防抖 + 扫描；随后的转发由 SendUtils.sendMsg 持自己的唤醒锁）
-        ForwardWakeLock.acquire("sms_db_scan", 60_000L)
+        //（只需覆盖 2 秒防抖 + 毫秒级扫描；随后的转发由 SendUtils.sendMsg 持自己的唤醒锁。
+        //发出短信写库同样会触发 onChange，锁时长须克制，避免每次发短信让 CPU 多醒一分钟）
+        ForwardWakeLock.acquire("sms_db_scan", 15_000L)
         handler.removeCallbacks(scanRunnable)
         handler.postDelayed(scanRunnable, DEBOUNCE_MS)
     }
