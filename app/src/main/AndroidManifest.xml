@@ -121,12 +121,15 @@
         <activity
             android:name=".activity.SplashActivity"
             android:configChanges="screenSize|keyboardHidden|orientation|keyboard"
+            android:excludeFromRecents="true"
             android:exported="true"
             android:screenOrientation="portrait"
             android:taskAffinity=":splash"
             android:theme="@style/AppTheme.Launch.App"
             android:windowSoftInputMode="adjustPan|stateHidden"
             tools:ignore="DiscouragedApi,TranslucentOrientation">
+            <!--taskAffinity=":splash" 使启动页独立成任务，excludeFromRecents 把该任务
+            藏出最近任务列表，否则最近任务会出现两张"短信转发器"卡片（主界面 + 残留启动页）-->
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
