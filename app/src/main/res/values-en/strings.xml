@@ -350,7 +350,7 @@
     <string name="filtering_duplicate_messages">Filter Duplicate Messages</string>
     <string name="filtering_duplicate_messages_tips">0=disabled, judge duplicate: type+source+content</string>
     <string name="forward_sms">Forward Sms</string>
-    <string name="forward_sms_tips">Main switch, requires permissions to read and sned SMS messages, especially verification SMS texts.</string>
+    <string name="forward_sms_tips">Main switch, requires permissions to read and sned SMS messages, especially verification SMS texts. Forwards MMS text content only (no images/media).</string>
     <string name="sms_command">Sms Command</string>
     <string name="sms_command_tips">Open the HttpServer or FRPC by the SMS command</string>
     <string name="close_to_earpiece_turn_off_screen">Close to the earpiece and turn off the screen</string>

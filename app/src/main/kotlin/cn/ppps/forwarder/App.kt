@@ -30,6 +30,7 @@ import cn.ppps.forwarder.receiver.BluetoothReceiver
 import cn.ppps.forwarder.receiver.LockScreenReceiver
 import cn.ppps.forwarder.receiver.NetworkChangeReceiver
 import cn.ppps.forwarder.receiver.SimStateReceiver
+import cn.ppps.forwarder.receiver.MmsDbObserver
 import cn.ppps.forwarder.receiver.SmsDbObserver
 import cn.ppps.forwarder.service.BluetoothScanService
 import cn.ppps.forwarder.service.ForegroundService
@@ -264,6 +265,8 @@ class App : Application(), Configuration.Provider by Core {
 
             //监听短信库变更，兜底捕获不触发 SMS_RECEIVED 广播的短信（如系统"智能信息"通道写入的短信）
             SmsDbObserver(applicationContext).register()
+            //监听彩信库变更，转发彩信的文字部分（用户需求：只要文字，不要图片/多媒体）
+            MmsDbObserver(applicationContext).register()
             //靠近听筒关屏
             ProximitySensorScreenHelper.refresh(this)
 

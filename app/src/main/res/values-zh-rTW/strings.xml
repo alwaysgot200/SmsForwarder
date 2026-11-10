@@ -351,7 +351,7 @@
     <string name="filtering_duplicate_messages">自動過濾多久內重複消息</string>
     <string name="filtering_duplicate_messages_tips">0=禁用，判斷重複：類型+來源+內容</string>
     <string name="forward_sms">轉發簡訊廣播</string>
-    <string name="forward_sms_tips">請授予讀取簡訊、通知類簡訊、發送簡訊等權限，關閉驗證碼保護</string>
+    <string name="forward_sms_tips">請授予讀取簡訊、通知類簡訊、發送簡訊等權限，關閉驗證碼保護；支援多媒體簡訊文字轉發（不含圖片/多媒體）</string>
     <string name="sms_command">簡訊指令</string>
     <string name="sms_command_tips">根據簡訊指令開關對應功能，指令格式：smsf#功能名#動作名</string>
     <string name="close_to_earpiece_turn_off_screen">靠近聽筒關屏</string>

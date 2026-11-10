@@ -26,54 +26,36 @@ class SmsReceiver : BroadcastReceiver() {
             //纯客户端模式
             if (SettingUtils.enablePureClientMode) return
 
-            //过滤广播
+            //过滤广播（彩信改由彩信库监听 MmsDbObserver 处理，不走 WAP-Push 广播）
             if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION
                 && intent.action != Telephony.Sms.Intents.SMS_DELIVER_ACTION
-                && intent.action != Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION
-                && intent.action != Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION
             ) return
 
             var msg = ""
             var displayAddress = ""
             var rawAddress = ""
-            if (intent.action == Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION || intent.action == Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION) {
-                val contentType = intent.type
-                if (contentType == "application/vnd.wap.mms-message") {
-                    val pduType = intent.getStringExtra("transactionId")
-                    if ("mms" == pduType) {
-                        val data = intent.getByteArrayExtra("data")
-                        if (data != null) {
-                            // 处理收到的 MMS 数据
-                            msg += handleMmsData(context, data)
-                        }
-                    }
-                }
-
-                displayAddress = intent.getStringExtra("address") ?: ""
-            } else {
-                val smsMessages: List<SmsMessage> = try {
-                    Telephony.Sms.Intents.getMessagesFromIntent(intent)?.toList() ?: emptyList()
+            val smsMessages: List<SmsMessage> = try {
+                Telephony.Sms.Intents.getMessagesFromIntent(intent)?.toList() ?: emptyList()
+            } catch (e: Exception) {
+                Log.e(TAG, "getMessagesFromIntent failed: ${e.message}")
+                emptyList()
+            }
+            for (smsMessage in smsMessages) {
+                //逐字段取值：单个字段解析失败（如智能短信 PDU 地址/内容为空）不丢整条短信
+                try {
+                    if (displayAddress.isEmpty()) displayAddress = smsMessage.displayOriginatingAddress ?: ""
                 } catch (e: Exception) {
-                    Log.e(TAG, "getMessagesFromIntent failed: ${e.message}")
-                    emptyList()
+                    Log.e(TAG, "displayOriginatingAddress failed: ${e.message}")
                 }
-                for (smsMessage in smsMessages) {
-                    //逐字段取值：单个字段解析失败（如智能短信 PDU 地址/内容为空）不丢整条短信
-                    try {
-                        if (displayAddress.isEmpty()) displayAddress = smsMessage.displayOriginatingAddress ?: ""
-                    } catch (e: Exception) {
-                        Log.e(TAG, "displayOriginatingAddress failed: ${e.message}")
-                    }
-                    try {
-                        if (rawAddress.isEmpty()) rawAddress = smsMessage.originatingAddress ?: ""
-                    } catch (e: Exception) {
-                        Log.e(TAG, "originatingAddress failed: ${e.message}")
-                    }
-                    try {
-                        msg += smsMessage.messageBody ?: ""
-                    } catch (e: Exception) {
-                        Log.e(TAG, "messageBody failed: ${e.message}")
-                    }
+                try {
+                    if (rawAddress.isEmpty()) rawAddress = smsMessage.originatingAddress ?: ""
+                } catch (e: Exception) {
+                    Log.e(TAG, "originatingAddress failed: ${e.message}")
+                }
+                try {
+                    msg += smsMessage.messageBody ?: ""
+                } catch (e: Exception) {
+                    Log.e(TAG, "messageBody failed: ${e.message}")
                 }
             }
 
@@ -159,59 +141,6 @@ class SmsReceiver : BroadcastReceiver() {
         SmsCommandUtils.execute(context, smsCommand)
     }
 
-    //处理 MMS 数据，返回文本部分内容
-    private fun handleMmsData(context: Context, data: ByteArray): String {
-        val textBuilder = StringBuilder()
-        try {
-            val mmsClass = Class.forName("android.telephony.gsm.SmsMessage")
-            val method = mmsClass.getDeclaredMethod("createFromPdu", ByteArray::class.java)
-            val pdus = arrayOf(data)
-            val messages = mutableListOf<Any>()
 
-            for (pdu in pdus) {
-                val message = method.invoke(null, pdu)
-                message?.let { messages.add(it) }
-            }
-
-            // 处理 MMS 中的各个部分
-            for (message in messages) {
-                // 获取 MMS 的各个部分
-                val parts = message.javaClass.getMethod("getParts").invoke(message) as? Array<*>
-
-                // 遍历 MMS 的各个部分
-                parts?.forEach { part ->
-                    // 获取部分的内容类型
-                    val contentType = part?.javaClass?.getMethod("getContentType")?.invoke(part) as? String
-
-                    // 处理文本部分
-                    if (contentType?.startsWith("text/plain") == true) {
-                        val text = part.javaClass.getMethod("getData").invoke(part) as? String
-                        // 处理文本信息
-                        if (text != null) {
-                            Log.d(TAG, "Text: $text")
-                            textBuilder.append(text)
-                        }
-                    }
-
-                    // 处理图像部分
-                    if (contentType?.startsWith("image/") == true) {
-                        val imageData = part.javaClass.getMethod("getData").invoke(part) as? ByteArray
-                        // 处理图像信息
-                        if (imageData != null) {
-                            // 在这里你可以保存图像数据或进行其他处理
-                            Log.d(TAG, "Image data received")
-                        }
-                    }
-
-                    // 其他部分的处理可以根据需要继续扩展
-                }
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e(TAG, "handleMmsData: $e")
-        }
-        return textBuilder.toString()
-    }
 
 }

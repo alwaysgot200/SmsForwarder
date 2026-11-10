@@ -381,7 +381,7 @@
     <string name="filtering_duplicate_messages">自动过滤多久内重复消息</string>
     <string name="filtering_duplicate_messages_tips">0=禁用，判断重复：类型+来源+内容</string>
     <string name="forward_sms">转发短信广播</string>
-    <string name="forward_sms_tips">请授予读取短信、通知类短信、发送短信等权限，关闭验证码保护</string>
+    <string name="forward_sms_tips">请授予读取短信、通知类短信、发送短信等权限，关闭验证码保护；支持彩信文字转发（不含图片/多媒体）</string>
     <string name="sms_command">短信指令</string>
     <string name="sms_command_tips">根据短信指令开关对应功能，指令格式：smsf#功能名#动作名</string>
     <string name="close_to_earpiece_turn_off_screen">靠近听筒关屏</string>
