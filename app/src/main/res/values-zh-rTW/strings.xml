@@ -390,7 +390,7 @@
     <string name="setup_wizard_sms_cta_message">小米/澎湃系統的反詐保護要求：本應用發送「非驗證碼」簡訊時，系統會彈出「是否允許發送簡訊」，必須人工點擊「確認發送」才會真正發出（驗證碼簡訊不受影響）。這是系統級攔截，無法程式化跳過。推薦開啟本應用的無障礙「自動確認發送」服務：彈窗出現時自動點擊「確認發送」，從此無需人工介入。備選出路：①開發者選項關閉「啟用系統最佳化」（會整體改變系統行為，可能影響其他功能）；②改用網路類發送通道（釘釘/企業微信/信箱/webhook/Telegram 等）。</string>
     <string name="setup_wizard_sms_cta_go">前往開啟自動確認</string>
     <string name="setup_wizard_code_protect_title">關閉「驗證碼安全保護」（如有）</string>
-    <string name="setup_wizard_code_protect_message">部分國產系統的「驗證碼安全保護/財務資訊保護」開啟時會禁止第三方應用讀取驗證碼、財務類簡訊，導致此類簡訊無法轉發。常見位置：vivo：簡訊→設定→隱私保護→「驗證碼安全保護」與「財務資訊保護」，均需關閉；OPPO：訊息→設定→隱私保護；華為/榮耀：負一屏搜尋「驗證碼」；小米 HyperOS 已無此開關。找到即關閉，找不到說明無此限制，直接點「知道了」。</string>
+    <string name="setup_wizard_code_protect_message">部分國產系統的「驗證碼安全保護/財務資訊保護」開啟時會禁止第三方應用讀取驗證碼、財務類簡訊，導致此類簡訊無法轉發。常見位置：vivo：簡訊→設定→隱私保護→「驗證碼安全保護」與「財務資訊保護」，均需關閉；OPPO：訊息→設定→隱私保護；華為/榮耀：負一屏搜尋「驗證碼」；小米 HyperOS 已無此開關，三星一般也無此開關。找到即關閉，找不到說明無此限制，直接點「知道了」。</string>
     <string name="setup_wizard_code_protect_go">開啟簡訊應用</string>
     <string name="a11y_sms_confirm_label">自動確認發送（反詐彈窗）</string>
     <string name="a11y_sms_confirm_description">開啟後，系統「是否允許發送簡訊」反詐確認彈窗出現時自動點擊「確認發送」，簡訊轉發無需逐條人工確認。僅在簡訊發送確認彈窗上生效，不影響其他任何彈窗。</string>

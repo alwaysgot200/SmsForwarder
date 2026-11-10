@@ -31,20 +31,23 @@ class SmsConfirmAccessibilityService : AccessibilityService() {
         private const val TAG = "SmsConfirmA11y"
 
         //国产系统承载"发送短信确认"弹窗的安全组件包名前缀
+        //小米安全中心/系统安全；OPPO ColorOS 新旧包名（coloros/oplus/oppo）；
+        //vivo/iQOO/LBE 系权限组件；华为/荣耀系统管家；魅族；三星设备安全（国内 One UI 反诈组件）
         private val SECURITY_PKG_PREFIXES = listOf(
             "com.miui.securitycenter", "com.miui.guardprovider",
-            "com.coloros.", "com.oplus.",
+            "com.coloros.", "com.oplus.", "com.oppo.",
             "com.vivo.", "com.iqoo.", "com.lbe.security",
             "com.huawei.systemmanager", "com.hihonor.systemmanager",
-            "com.meizu.safe"
+            "com.meizu.safe", "com.samsung.android.sm", "com.sec."
         )
 
-        //语义唯一、可直接点击的按钮文案
+        //语义唯一、可直接点击的按钮文案（命中即可点）
         private const val PHRASE_CONFIRM_SEND = "确认发送"
         private const val PHRASE_CONFIRM_SEND_EN = "Confirm send"
+        private const val PHRASE_CONFIRM_ANYWAY = "仍要发送"
 
-        //宽义按钮文案：仅当弹窗内容明确出现"发送短信"字样时才允许点击
-        private val PHRASES_GENERIC = listOf("允许", "Allow")
+        //宽义按钮文案：仅当弹窗内容明确涉及"发送短信/彩信"时才允许点击
+        private val PHRASES_GENERIC = listOf("允许", "发送", "Allow", "Send")
 
         //防重复点击：同一弹窗的窗口刷新事件会在短时间内连发
         private const val CLICK_DEBOUNCE_MS = 2_000L
@@ -106,17 +109,24 @@ class SmsConfirmAccessibilityService : AccessibilityService() {
      * "弹窗内容含'发送短信'"为前置条件，避免误点其他安全弹窗
      */
     private fun findConfirmNode(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        for (phrase in listOf(PHRASE_CONFIRM_SEND, PHRASE_CONFIRM_SEND_EN)) {
+        //语义唯一文案（"确认发送"/"仍要发送"）只出现在发送确认弹窗，命中即可点
+        for (phrase in listOf(PHRASE_CONFIRM_SEND, PHRASE_CONFIRM_SEND_EN, PHRASE_CONFIRM_ANYWAY)) {
             findClickableByText(root, phrase)?.let { return it }
         }
-        val hasSmsContext = root.findAccessibilityNodeInfosByText("发送短信").isNotEmpty() ||
-            root.findAccessibilityNodeInfosByText("发送彩信").isNotEmpty()
-        if (!hasSmsContext) return null
+        //宽义文案（允许/发送）必须以"弹窗内容涉及短信/彩信"为前置，避免误点其他安全弹窗；
+        //各家弹窗措辞不一：大陆系"发送短信/彩信"、繁体"簡訊"、国际 ROM 英文 "sms"
+        if (!hasSmsContext(root)) return null
         for (phrase in PHRASES_GENERIC) {
             findClickableByText(root, phrase)?.let { return it }
         }
         return null
     }
+
+    private fun hasSmsContext(root: AccessibilityNodeInfo): Boolean =
+        root.findAccessibilityNodeInfosByText("发送短信").isNotEmpty() ||
+            root.findAccessibilityNodeInfosByText("发送彩信").isNotEmpty() ||
+            root.findAccessibilityNodeInfosByText("简讯").isNotEmpty() ||
+            root.findAccessibilityNodeInfosByText("sms").isNotEmpty()
 
     /** 按文案查找可点击节点：节点自身不可点击时上溯最近的可点击祖先 */
     private fun findClickableByText(root: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {

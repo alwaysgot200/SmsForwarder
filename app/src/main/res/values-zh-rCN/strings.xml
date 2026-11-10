@@ -390,7 +390,7 @@
     <string name="setup_wizard_sms_cta_message">小米/澎湃系统的反诈保护要求：本应用发送“非验证码”短信时，系统会弹出“是否允许发送短信”，必须人工点击“确认发送”才会真正发出（验证码短信不受影响）。这是系统级拦截，无法编程跳过。推荐开启本应用的无障碍“自动确认发送”服务：弹窗出现时自动点击“确认发送”，从此无需人工介入。备选出路：①开发者选项关闭“启用系统优化”（会整体改变系统行为，可能影响其他功能）；②改用网络类发送通道（钉钉/企业微信/邮箱/webhook/Telegram 等）。</string>
     <string name="setup_wizard_sms_cta_go">去开启自动确认</string>
     <string name="setup_wizard_code_protect_title">关闭“验证码安全保护”（如有）</string>
-    <string name="setup_wizard_code_protect_message">部分国产系统的“验证码安全保护/财务信息保护”开启时会禁止第三方应用读取验证码、财务类短信，导致此类短信无法转发。常见位置：vivo：短信→设置→隐私保护→“验证码安全保护”与“财务信息保护”，均需关闭；OPPO：信息→设置→隐私保护；华为/荣耀：负一屏搜索“验证码”；小米 HyperOS 已无此开关。找到即关闭，找不到说明无此限制，直接点“知道了”。</string>
+    <string name="setup_wizard_code_protect_message">部分国产系统的“验证码安全保护/财务信息保护”开启时会禁止第三方应用读取验证码、财务类短信，导致此类短信无法转发。常见位置：vivo：短信→设置→隐私保护→“验证码安全保护”与“财务信息保护”，均需关闭；OPPO：信息→设置→隐私保护；华为/荣耀：负一屏搜索“验证码”；小米 HyperOS 已无此开关，三星一般也无此开关。找到即关闭，找不到说明无此限制，直接点“知道了”。</string>
     <string name="setup_wizard_code_protect_go">打开短信应用</string>
     <string name="a11y_sms_confirm_label">自动确认发送（反诈弹窗）</string>
     <string name="a11y_sms_confirm_description">开启后，系统“是否允许发送短信”反诈确认弹窗出现时自动点击“确认发送”，短信转发无需逐条人工确认。仅在短信发送确认弹窗上生效，不影响其他任何弹窗。</string>
