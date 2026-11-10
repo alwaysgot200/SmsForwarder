@@ -205,6 +205,9 @@ class ForegroundService : Service() {
         var isRunning = false
     }
 
+    //主动停止标记：ACTION_STOP 停止后看门狗不再复活服务
+    private var deliberateStop = false
+
     override fun onCreate() {
         super.onCreate()
 
@@ -232,10 +235,13 @@ class ForegroundService : Service() {
         if (intent != null) {
             when (intent.action) {
                 ACTION_START -> {
+                    deliberateStop = false
                     startForegroundService()
                 }
 
                 ACTION_STOP -> {
+                    //主动停止：onDestroy 不再安排看门狗复活（否则与停止意图自相矛盾）
+                    deliberateStop = true
                     stopForegroundService()
                 }
 
@@ -257,8 +263,9 @@ class ForegroundService : Service() {
         //非纯客户端模式
         if (!SettingUtils.enablePureClientMode) {
             stopForegroundService()
-            //服务被系统回收时安排延迟自愈（非立即重启，避免与系统查杀形成重启风暴）
-            KeepAliveUtils.scheduleServiceWatchdog(this, 30_000L)
+            //服务被系统回收时安排延迟自愈（非立即重启，避免与系统查杀形成重启风暴）；
+            //主动停止（ACTION_STOP）不复活，尊重停止意图
+            if (!deliberateStop) KeepAliveUtils.scheduleServiceWatchdog(this, 30_000L)
         }
         if (::flashUtils.isInitialized) {
             flashUtils.release()

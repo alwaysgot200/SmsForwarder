@@ -29,6 +29,7 @@ import cn.ppps.forwarder.receiver.BatteryReceiver
 import cn.ppps.forwarder.receiver.BluetoothReceiver
 import cn.ppps.forwarder.receiver.LockScreenReceiver
 import cn.ppps.forwarder.receiver.NetworkChangeReceiver
+import cn.ppps.forwarder.receiver.SimStateReceiver
 import cn.ppps.forwarder.receiver.SmsDbObserver
 import cn.ppps.forwarder.service.BluetoothScanService
 import cn.ppps.forwarder.service.ForegroundService
@@ -218,6 +219,9 @@ class App : Application(), Configuration.Provider by Core {
             val batteryReceiver = BatteryReceiver()
             val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             registerReceiver(batteryReceiver, batteryFilter)
+
+            //监听SIM卡状态变化（SIM_STATE_CHANGED 自 Android 8 起不再投递给 manifest 声明的接收器，必须动态注册）
+            registerReceiver(SimStateReceiver(), IntentFilter("android.intent.action.SIM_STATE_CHANGED"))
 
             //监听蓝牙状态变化
             val bluetoothReceiver = BluetoothReceiver()

@@ -353,14 +353,7 @@
                     tools:ignore="BatteryLife" />-->
             </intent-filter>
         </receiver>
-        <receiver
-            android:name=".receiver.SimStateReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.SIM_STATE_CHANGED" />
-            </intent-filter>
-        </receiver>
+        <!--SimStateReceiver 改为 App 中动态注册：SIM_STATE_CHANGED 自 Android 8 起不向 manifest 接收器投递 -->
         <receiver
             android:name=".receiver.SmsReceiver"
             android:exported="true"
