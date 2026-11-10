@@ -386,6 +386,9 @@
     <string name="setup_wizard_notify_listen_message">用於轉發 APP 通知；該服務由系統直接綁定執行，是最強的保活錨點之一。</string>
     <string name="setup_wizard_lock_task_title">保活最後一步：最近任務加鎖</string>
     <string name="setup_wizard_lock_task_message">開啟最近任務介面，找到本應用卡片，下拉卡片點擊鎖圖標加鎖。鎖定的卡片無法被劃掉，保活萬無一失。</string>
+    <string name="setup_wizard_sms_cta_title">關於小米「確認發送」彈窗（反詐確認）</string>
+    <string name="setup_wizard_sms_cta_message">小米/澎湃系統的反詐保護要求：本應用發送「非驗證碼」簡訊時，系統會彈出「是否允許發送簡訊」，點擊「確認發送」後才會真正發出；驗證碼簡訊不受影響。這是系統級攔截，任何應用都無法自動跳過，彈窗並非故障。如需無人值守自動發簡訊，可以：①在開發者選項中關閉「啟用 MIUI 最佳化」（注意：會整體改變系統行為，可能影響其他功能，請自行斟酌）；②或改用網路類發送通道（釘釘/企業微信/信箱/webhook/Telegram 等），不受此限制。</string>
+    <string name="setup_wizard_sms_cta_go">前往開發者選項</string>
     <string name="setup_wizard_remain_hint">保活設定精靈：完成後不再打擾，剩餘 %1$d 步</string>
     <string name="setup_wizard_go">前往設定</string>
     <string name="setup_wizard_skip">暫不</string>

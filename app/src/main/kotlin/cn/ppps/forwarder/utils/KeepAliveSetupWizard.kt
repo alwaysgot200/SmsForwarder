@@ -18,7 +18,7 @@ import com.xuexiang.xui.widget.dialog.materialdialog.MaterialDialog
  * 已完成的项目自动检测跳过，每步"一键直达"对应设置页，总步骤最少。
  *
  * 步骤按保活权重排序：忽略电池优化 → 精确闹钟 → 厂商自启动 → 厂商省电策略 →
- * 通知使用权（系统强绑定锚点）→ 最近任务加锁说明。
+ * 通知使用权（系统强绑定锚点）→ 小米反诈确认说明（仅小米系）→ 最近任务加锁说明。
  * 从设置页返回后自动进入下一步（[onResumed] 驱动）；全部完成或用户跳过后不再打扰，
  * 后续若仍发生"被杀未复苏"，由 [cn.ppps.forwarder.activity.MainActivity] 的心跳检测引导兜底。
  */
@@ -31,6 +31,7 @@ object KeepAliveSetupWizard {
     private const val STEP_POWER_SAVE = 4
     private const val STEP_NOTIFY_LISTEN = 5
     private const val STEP_LOCK_TASK = 6
+    private const val STEP_SMS_CTA = 7
 
     private const val SP_SETUP_DONE = "keepalive_setup_wizard_done"
     private const val SP_SETUP_VISITED = "keepalive_setup_wizard_visited"
@@ -147,7 +148,16 @@ object KeepAliveSetupWizard {
                 }
             )
         }
-        //6 收尾说明：最近任务加锁（无对应设置页可跳，纯指引）
+        //6 小米反诈确认说明：小米/澎湃对"非验证码"短信发送强制人工确认（CTA 反诈要求，系统级，
+        //无法由应用自动跳过），提前告知用户弹窗不是故障，并给出无人值守的两条出路
+        if (CommonUtils.isXiaomiFamily()) {
+            add(
+                Step(STEP_SMS_CTA, R.string.setup_wizard_sms_cta_title, R.string.setup_wizard_sms_cta_message, R.string.setup_wizard_sms_cta_go) {
+                    it.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            )
+        }
+        //7 收尾说明：最近任务加锁（无对应设置页可跳，纯指引）
         add(
             Step(STEP_LOCK_TASK, R.string.setup_wizard_lock_task_title, R.string.setup_wizard_lock_task_message, R.string.setup_wizard_ok) {
             }
