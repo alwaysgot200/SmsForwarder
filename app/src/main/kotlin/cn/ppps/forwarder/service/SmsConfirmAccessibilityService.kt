@@ -3,6 +3,7 @@ package cn.ppps.forwarder.service
 import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -73,8 +74,7 @@ class SmsConfirmAccessibilityService : AccessibilityService() {
         val now = System.currentTimeMillis()
         if (now - lastClickTs < CLICK_DEBOUNCE_MS) return
 
-        val root = rootInActiveWindow ?: return
-        if (root.packageName != pkg) return
+        val root = findTargetRoot(pkg) ?: return
 
         val confirmNode = findConfirmNode(root) ?: return
         lastClickTs = now
@@ -83,6 +83,22 @@ class SmsConfirmAccessibilityService : AccessibilityService() {
         if (clicked) {
             XToastUtils.success(getString(R.string.auto_confirm_sent_toast))
         }
+    }
+
+    /**
+     * 定位弹窗所在窗口的节点树：优先当前活动窗口；解锁瞬间活动窗口切换存在竞态
+     * （事件到达时活动窗口可能仍是钥匙串/前一窗口），遍历无障碍窗口列表兜底，
+     * 这是熄屏解锁后仍能自动点击的关键
+     */
+    private fun findTargetRoot(pkg: String): AccessibilityNodeInfo? {
+        rootInActiveWindow?.takeIf { it.packageName == pkg }?.let { return it }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            for (window in windows) {
+                val root = window.root ?: continue
+                if (root.packageName == pkg) return root
+            }
+        }
+        return null
     }
 
     /**
