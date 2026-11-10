@@ -2,8 +2,8 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 def build_versions = [:]
-build_versions.version_code = 61
-build_versions.version_name = "3.5.6"
+build_versions.version_code = 62
+build_versions.version_name = "3.5.7"
 build_versions.min_sdk = 19
 build_versions.target_sdk = 33
 //compileSdk 单独提升：Room 2.6.1 等新依赖要求 ≥34（本机 SDK 无 android-34，用 35）；targetSdk 保持 33 不改变运行时行为
