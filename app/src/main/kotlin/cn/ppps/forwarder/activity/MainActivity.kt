@@ -329,7 +329,8 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
 
     override fun onResume() {
         super.onResume()
-        //从厂商设置页返回后，继续保活设置向导的下一步
+        //保活缺项审计：静默自愈（拉起前台服务）+ 定期缺项弹窗；从厂商设置页返回后继续向导下一步
+        KeepAliveSetupWizard.auditIfNeeded(this)
         KeepAliveSetupWizard.onResumed(this)
     }
 

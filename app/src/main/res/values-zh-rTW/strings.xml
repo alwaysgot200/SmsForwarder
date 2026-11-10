@@ -381,7 +381,7 @@
     <string name="setup_wizard_autostart_title">保活第 3 步：允許自啟動</string>
     <string name="setup_wizard_autostart_message">未開自啟動時，劃掉任務卡片會徹底清除本應用。請在開啟的頁面中將本應用設為允許自啟動。</string>
     <string name="setup_wizard_power_save_title">保活第 4 步：省電策略設為無限制</string>
-    <string name="setup_wizard_power_save_message">請在開啟的頁面中將本應用的省電策略改為「無限制」，避免熄屏後被凍結斷網。</string>
+    <string name="setup_wizard_power_save_message">請在開啟的頁面中允許本應用後台執行（省電策略設為無限制/不受限制），避免熄屏後被凍結斷網。</string>
     <string name="setup_wizard_notify_listen_title">保活第 5 步：開啟通知使用權（推薦）</string>
     <string name="setup_wizard_notify_listen_message">用於轉發 APP 通知；該服務由系統直接綁定執行，是最強的保活錨點之一。</string>
     <string name="setup_wizard_lock_task_title">保活最後一步：最近任務加鎖</string>

@@ -34,9 +34,16 @@ object KeepAliveSetupWizard {
 
     private const val SP_SETUP_DONE = "keepalive_setup_wizard_done"
     private const val SP_SETUP_VISITED = "keepalive_setup_wizard_visited"
+    private const val SP_LAST_AUDIT = "keepalive_audit_ts"
+
+    //缺项审计周期：向导完成后每隔该时长复查一次（打开主窗口时触发），发现缺项立即弹窗
+    private const val AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000L
 
     //从"去设置"跳出后置位，回到应用时据此推进下一步
     private var waitingReturn = false
+
+    //向导/审计对话框是否正在显示（避免 onResume 重复弹窗堆叠）
+    private var dialogOpen = false
 
     private data class Step(
         val id: Int,
@@ -58,11 +65,42 @@ object KeepAliveSetupWizard {
         showNextPending(activity)
     }
 
-    /** 从厂商设置页返回后驱动下一步 */
+    /** 从厂商设置页返回后驱动下一步（向导与审计两条路径共用，不检查 done 标记） */
     fun onResumed(activity: Activity) {
         if (!waitingReturn) return
         waitingReturn = false
-        if (!isPending(activity)) return
+        showNextPending(activity)
+    }
+
+    /**
+     * 保活缺项审计：打开主窗口时调用。
+     * - 静默自愈：前台服务不在运行时直接拉起（无弹窗，每次都检查）；
+     * - 缺项弹窗：向导完成后每 [AUDIT_INTERVAL_MS] 复查一次，步骤按实时状态动态构建，
+     *   电池优化/精确闹钟/通知使用权等"可检测项"回归缺省时重新出现并提示用户设置。
+     *   厂商自启动/省电策略属于"不可编程检测"项，去过一次即视为已配置，其回归缺省
+     *   只能通过心跳断档检测（被杀未复苏引导）发现。
+     */
+    fun auditIfNeeded(activity: Activity) {
+        if (SettingUtils.enablePureClientMode) return
+
+        //静默自愈：前台服务被回收/查杀时直接拉起
+        if (!cn.ppps.forwarder.service.ForegroundService.isRunning) {
+            cn.ppps.forwarder.receiver.KeepAliveReceiver.restartForegroundService(activity)
+        }
+
+        if (dialogOpen || waitingReturn) return
+
+        //首启向导未完成：不限流，继续引导
+        if (isPending(activity)) {
+            showNextPending(activity)
+            return
+        }
+
+        //向导已完成：限流复查缺项
+        var lastAudit: Long by SharedPreference(SP_LAST_AUDIT, 0L)
+        val now = System.currentTimeMillis()
+        if (now - lastAudit < AUDIT_INTERVAL_MS) return
+        lastAudit = now
         showNextPending(activity)
     }
 
@@ -92,8 +130,9 @@ object KeepAliveSetupWizard {
                 CommonUtils.startToAutoStartSetting(it)
             }
         )
-        //4 厂商省电策略：小米独立页面；其他厂商已在自启动页文案中一并提示
-        if (CommonUtils.isXiaomiFamily()) {
+        //4 厂商省电策略/后台权限：各定制系统都有对应页面（小米/华为/荣耀/OPPO系/vivo系/三星/魅族），
+        //跳转失败时自动多级兜底；非定制系统（原生类）不占步骤
+        if (CommonUtils.isDomesticOem()) {
             add(
                 Step(STEP_POWER_SAVE, R.string.setup_wizard_power_save_title, R.string.setup_wizard_power_save_message, R.string.setup_wizard_go) {
                     CommonUtils.startToPowerSaveSetting(it)
@@ -132,11 +171,13 @@ object KeepAliveSetupWizard {
         }
         content.append("\n\n").append(activity.getString(R.string.setup_wizard_remain_hint, pending.size))
 
+        dialogOpen = true
         MaterialDialog.Builder(activity)
             .title(step.titleRes)
             .content(content)
             .positiveText(step.goRes)
             .onPositive { _: MaterialDialog?, _: DialogAction? ->
+                dialogOpen = false
                 markVisited(activity, step.id)
                 if (step.id == STEP_LOCK_TASK) {
                     //收尾步骤无跳转，直接结束
@@ -148,7 +189,9 @@ object KeepAliveSetupWizard {
             }
             .negativeText(R.string.setup_wizard_skip)
             .onNegative { _: MaterialDialog?, _: DialogAction? ->
-                //暂不：完成向导不再打扰；后续若真的发生"被杀未复苏"，心跳检测引导会再兜底
+                //暂不：结束本轮；可检测项（电池优化/精确闹钟/通知使用权）若仍缺省，
+                //审计会在下个周期再次提醒；不可检测的厂商项由心跳断档检测兜底
+                dialogOpen = false
                 finishWizard(activity)
             }
             .cancelable(false)

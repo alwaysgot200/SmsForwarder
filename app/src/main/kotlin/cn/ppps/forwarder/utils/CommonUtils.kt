@@ -63,6 +63,9 @@ import java.util.regex.Pattern
 @Suppress("RegExpRedundantEscape", "unused", "RegExpUnnecessaryNonCapturingGroup")
 class CommonUtils private constructor() {
     companion object {
+
+        private const val TAG = "CommonUtils"
+
         /**
          * 这里填写你的应用隐私政策网页地址
          */
@@ -494,35 +497,101 @@ class CommonUtils private constructor() {
         return Build.BRAND.lowercase(Locale.ROOT) in setOf("xiaomi", "redmi") || Build.MANUFACTURER.lowercase(Locale.ROOT) == "xiaomi"
     }
 
-    //跳转 MIUI/HyperOS [省电策略] 配置页，将本应用的省电策略改为"无限制"
+    //以下品牌族识别用于匹配各厂商的省电/后台设置页
+    fun isHuaweiFamily(): Boolean = Build.MANUFACTURER.equals("HUAWEI", true)
+
+    fun isHonorFamily(): Boolean = Build.BRAND.equals("honor", true) || Build.MANUFACTURER.equals("HONOR", true)
+
+    fun isOppoFamily(): Boolean = listOf("oppo", "oneplus", "realme").any { Build.BRAND.equals(it, true) } || Build.MANUFACTURER.equals("OPPO", true)
+
+    fun isVivoFamily(): Boolean = listOf("vivo", "iqoo").any { Build.BRAND.equals(it, true) }
+
+    fun isSamsungFamily(): Boolean = Build.MANUFACTURER.equals("samsung", true)
+
+    fun isMeizuFamily(): Boolean = Build.BRAND.equals("meizu", true)
+
+    //是否国产定制系统（有专属的自启动/省电后台设置）
+    fun isDomesticOem(): Boolean = isXiaomiFamily() || isHuaweiFamily() || isHonorFamily() || isOppoFamily() || isVivoFamily() || isSamsungFamily() || isMeizuFamily()
+
+    //跳转各厂商的[省电策略/后台运行]配置页，将本应用设为后台不受限制。
+    //各厂商组件名随系统版本可能变化：逐个尝试专属页面，全部失败时退回厂商管理应用首页，
+    //仍失败则退回应用详情页（电池/权限设置都在其中），保证任何机型都有出口
     fun startToPowerSaveSetting(context: Context) {
-        try {
-            val label = try {
-                val appInfo = context.applicationInfo
-                context.packageManager.getApplicationLabel(appInfo).toString()
-            } catch (e: Exception) {
-                context.packageName
-            }
-            val intent = Intent()
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.component = ComponentName("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity")
-            intent.putExtra("package_name", context.packageName)
-            intent.putExtra("package_label", label)
-            context.startActivity(intent)
+        val label = try {
+            context.packageManager.getApplicationLabel(context.applicationInfo).toString()
         } catch (e: Exception) {
-            //页面不存在（非小米系统或新版本更名）时退回安全中心首页
-            e.printStackTrace()
+            context.packageName
+        }
+
+        //Triple(包名, 组件类名, 是否需要附加本应用信息)
+        val candidates = when {
+            isXiaomiFamily() -> listOf(
+                Triple("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity", true)
+            )
+            isHuaweiFamily() -> listOf(
+                Triple("com.huawei.systemmanager", ".optimize.process.ProtectActivity", false)
+            )
+            isHonorFamily() -> listOf(
+                Triple("com.hihonor.systemmanager", ".optimize.process.ProtectActivity", false)
+            )
+            isOppoFamily() -> listOf(
+                Triple("com.coloros.oppoguardelf", "com.coloros.powermanager.fuelgaue.PowerUsageModelActivity", false),
+                Triple("com.oplus.battery", "com.oplus.battery.ui.consumption.PackageConsumptionActivity", false)
+            )
+            isVivoFamily() -> listOf(
+                Triple("com.iqoo.secure", ".ui.phoneoptimize.AddWhiteListActivity", false),
+                Triple("com.vivo.permissionmanager", ".activity.BgStartUpManagerActivity", false)
+            )
+            isSamsungFamily() -> listOf(
+                Triple("com.samsung.android.lool", "com.samsung.android.sm.battery.ui.BatteryActivity", false),
+                Triple("com.samsung.android.sm_cn", "com.samsung.android.sm.ui.battery.BatteryActivity", false)
+            )
+            isMeizuFamily() -> listOf(
+                Triple("com.meizu.safe", ".permission.SmartBGActivity", false)
+            )
+            else -> emptyList()
+        }
+
+        for ((pkg, cls, needExtras) in candidates) {
             try {
-                val launch = context.packageManager.getLaunchIntentForPackage("com.miui.securitycenter")
+                val intent = Intent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .setComponent(ComponentName(pkg, cls))
+                if (needExtras) {
+                    intent.putExtra("package_name", context.packageName)
+                    intent.putExtra("package_label", label)
+                }
+                context.startActivity(intent)
+                Log.d(TAG, "已跳转省电设置页：$pkg/$cls")
+                return
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Log.e(TAG, "省电设置页不可达 $pkg/$cls: ${e.message}")
+            }
+        }
+
+        //专属页面均不可达：退回厂商管理应用首页
+        for (pkg in listOf("com.miui.securitycenter", "com.huawei.systemmanager", "com.hihonor.systemmanager", "com.coloros.safecenter", "com.oplus.battery", "com.iqoo.secure", "com.vivo.permissionmanager", "com.samsung.android.sm_cn", "com.samsung.android.lool", "com.meizu.safe")) {
+            try {
+                val launch = context.packageManager.getLaunchIntentForPackage(pkg)
                 if (launch != null) {
                     context.startActivity(launch)
-                } else {
-                    startToAutoStartSetting(context)
+                    return
                 }
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-                startToAutoStartSetting(context)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+        }
+
+        //最终兜底：应用详情页（电池/权限设置都在其中）
+        try {
+            val intent = Intent()
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.action = "android.settings.APPLICATION_DETAILS_SETTINGS"
+            intent.data = Uri.fromParts("package", context.packageName, null)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            startToAutoStartSetting(context)
         }
     }
 

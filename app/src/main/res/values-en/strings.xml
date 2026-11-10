@@ -380,7 +380,7 @@
     <string name="setup_wizard_autostart_title">Keep-alive step 3: Allow auto-start</string>
     <string name="setup_wizard_autostart_message">Without auto-start, removing the app card from Recents fully wipes the app. Please allow auto-start on the page that opens.</string>
     <string name="setup_wizard_power_save_title">Keep-alive step 4: Set battery saver to No restrictions</string>
-    <string name="setup_wizard_power_save_message">Please set this app’s battery saver policy to “No restrictions” on the page that opens, to avoid being frozen off-network with the screen off.</string>
+    <string name="setup_wizard_power_save_message">Please allow this app to run in the background on the page that opens (set battery saver to No restrictions), to avoid being frozen off-network with the screen off.</string>
     <string name="setup_wizard_notify_listen_title">Keep-alive step 5: Enable notification access (recommended)</string>
     <string name="setup_wizard_notify_listen_message">Used to forward APP notifications; this service is directly bound by the system — one of the strongest keep-alive anchors.</string>
     <string name="setup_wizard_lock_task_title">Final step: Lock the app in Recents</string>
