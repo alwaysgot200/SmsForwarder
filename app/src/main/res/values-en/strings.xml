@@ -395,7 +395,7 @@
     <string name="a11y_sms_confirm_description">When enabled, the system “Allow sending SMS?” anti-fraud prompt is confirmed automatically by tapping “Confirm send”, so SMS forwarding needs no manual confirmation. It only acts on SMS-send confirmation prompts — no other dialogs are touched.</string>
     <string name="auto_confirm_sent_toast">Auto-tapped “Confirm send”</string>
     <string name="auto_confirm_setting">Auto-tap “Confirm send” (anti-fraud prompt)</string>
-    <string name="auto_confirm_setting_tips">When enabled, an accessibility service taps “Confirm send” on the system anti-fraud prompt automatically — forwarding needs no manual confirmation</string>
+    <string name="auto_confirm_setting_tips">When enabled, an accessibility service taps “Confirm send” on the system anti-fraud prompt automatically — forwarding needs no manual confirmation. Not applicable while the screen is off/locked: the prompt only appears after unlock, where it is tapped automatically</string>
     <string name="auto_confirm_permission_title">Accessibility permission required</string>
     <string name="auto_confirm_permission_message">“Auto-tap Confirm send” relies on the system accessibility capability: in Accessibility settings, find “SmsForwarder → Auto confirm send (anti-fraud prompt)” and turn it on. The service only acts on SMS-send confirmation prompts — no other dialogs are touched.</string>
     <string name="auto_confirm_permission_go">Open accessibility settings</string>

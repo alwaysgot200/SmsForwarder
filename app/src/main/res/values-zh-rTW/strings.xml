@@ -396,7 +396,7 @@
     <string name="a11y_sms_confirm_description">開啟後，系統「是否允許發送簡訊」反詐確認彈窗出現時自動點擊「確認發送」，簡訊轉發無需逐條人工確認。僅在簡訊發送確認彈窗上生效，不影響其他任何彈窗。</string>
     <string name="auto_confirm_sent_toast">已自動點擊「確認發送」</string>
     <string name="auto_confirm_setting">自動點擊「確認發送」（反詐彈窗）</string>
-    <string name="auto_confirm_setting_tips">開啟後由無障礙服務自動點擊系統反詐確認彈窗，簡訊轉發全程無需人工確認</string>
+    <string name="auto_confirm_setting_tips">開啟後由無障礙服務自動點擊系統反詐確認彈窗，簡訊轉發全程無需人工確認；熄屏/鎖屏時不適用（系統解鎖後才出現彈窗，屆時自動補點）</string>
     <string name="auto_confirm_permission_title">需要無障礙權限</string>
     <string name="auto_confirm_permission_message">「自動點擊確認發送」依賴系統無障礙能力：請在無障礙設定中找到「短信轉發器 → 自動確認發送（反詐彈窗）」並開啟。該服務僅作用於簡訊發送確認彈窗，不影響其他任何彈窗。</string>
     <string name="auto_confirm_permission_go">前往無障礙設定</string>

@@ -396,7 +396,7 @@
     <string name="a11y_sms_confirm_description">开启后，系统“是否允许发送短信”反诈确认弹窗出现时自动点击“确认发送”，短信转发无需逐条人工确认。仅在短信发送确认弹窗上生效，不影响其他任何弹窗。</string>
     <string name="auto_confirm_sent_toast">已自动点击“确认发送”</string>
     <string name="auto_confirm_setting">自动点击“确认发送”（反诈弹窗）</string>
-    <string name="auto_confirm_setting_tips">开启后由无障碍服务自动点击系统反诈确认弹窗，短信转发全程无需人工确认</string>
+    <string name="auto_confirm_setting_tips">开启后由无障碍服务自动点击系统反诈确认弹窗，短信转发全程无需人工确认；熄屏/锁屏期间不适用（系统解锁后才出现弹窗，届时自动补点）</string>
     <string name="auto_confirm_permission_title">需要无障碍权限</string>
     <string name="auto_confirm_permission_message">“自动点击确认发送”依赖系统无障碍能力：请在无障碍设置中找到“短信转发器 → 自动确认发送（反诈弹窗）”并开启。该服务仅作用于短信发送确认弹窗，不影响其他任何弹窗。</string>
     <string name="auto_confirm_permission_go">去无障碍设置</string>
