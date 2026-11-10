@@ -249,6 +249,19 @@
             android:enabled="true"
             android:exported="false" />
         <service
+            android:name=".service.SmsConfirmAccessibilityService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/a11y_sms_confirm_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/sms_confirm_accessibility_service" />
+        </service>
+        <service
             android:name=".service.ForegroundService"
             android:enabled="true"
             android:foregroundServiceType="specialUse">
