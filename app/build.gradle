@@ -18,6 +18,21 @@ if (keyPropsFile.exists()) {
     keyProps.load(new FileInputStream(keyPropsFile))
 }
 
+//CI tag 发布时（Release.yml 传 -PtagVersion）以 git tag 为版本唯一事实来源：
+//versionName 直接取 tag，versionCode 由 X.Y.Z 推导为 X*100000+Y*1000+Z（单调递增，
+//保证旧版可升级并触发 XUpdate 更新）；非 tag 构建仍用 versions.gradle 的值。
+//非 X.Y.Z 格式（如 workflow_dispatch 触发时传入分支名）自动回退
+def tagVersion = (findProperty('tagVersion') ?: '').toString()
+if (!(tagVersion ==~ /^\d+\.\d+\.\d+$/)) {
+    tagVersion = ''
+}
+def releaseVersionName = tagVersion ?: build_versions.version_name
+def releaseVersionCode = build_versions.version_code
+if (tagVersion) {
+    def v = tagVersion.split('\\.')*.toInteger()
+    releaseVersionCode = v[0] * 100000 + v[1] * 1000 + v[2]
+}
+
 //打包时，记得设置true启用
 if (isNeedPackage.toBoolean() && isUseBooster.toBoolean()) {
     apply plugin: 'com.didiglobal.booster'
@@ -66,8 +81,8 @@ android {
         applicationId "cn.ppps.forwarder"
         minSdkVersion build_versions.min_sdk
         targetSdkVersion build_versions.target_sdk
-        versionCode build_versions.version_code
-        versionName = "${build_versions.version_name}.${buildDate}"
+        versionCode releaseVersionCode
+        versionName = "${releaseVersionName}.${buildDate}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "BUILD_TIME", "\"${buildTime}\""
         buildConfigField "String", "GIT_COMMIT_ID", "\"${gitCommitId}\""
@@ -205,7 +220,7 @@ android {
             def abiName = output.getFilter(com.android.build.OutputFile.ABI)
             if (abiName == null) abiName = "universal"
             output.versionCodeOverride = abiCodes.get(abiName, 0) * 100000 + variant.versionCode
-            output.outputFileName = "SmsForwarder_${build_versions.version_name}_${abiName}.apk"
+            output.outputFileName = "SmsForwarder_${releaseVersionName}_${abiName}.apk"
 
             // 修改 output-metadata.json 追加编译日期、编译时间、Git Commit ID
             def assembleTaskName = "assemble${variant.name.capitalize()}"

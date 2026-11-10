@@ -2,6 +2,7 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 def build_versions = [:]
+//版本号：tag 发布（Release.yml）以 git tag 为唯一事实来源自动推导，此处仅用于本地开发构建
 build_versions.version_code = 62
 build_versions.version_name = "3.5.7"
 build_versions.min_sdk = 19
