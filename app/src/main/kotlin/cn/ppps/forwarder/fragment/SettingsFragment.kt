@@ -49,6 +49,7 @@ import cn.ppps.forwarder.utils.ACTION_STOP
 import cn.ppps.forwarder.utils.ACTION_UPDATE_NOTIFICATION
 import cn.ppps.forwarder.utils.AppUtils.getAppPackageName
 import cn.ppps.forwarder.utils.BluetoothUtils
+import cn.ppps.forwarder.service.SmsConfirmAccessibilityService
 import cn.ppps.forwarder.utils.CommonUtils
 import cn.ppps.forwarder.utils.DataProvider
 import cn.ppps.forwarder.utils.EVENT_LOAD_APP_LIST
@@ -179,6 +180,8 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
         batterySetting(binding!!.layoutBatterySetting, binding!!.sbBatterySetting)
         //允许精确闹钟（保活加固）
         exactAlarmSetting(binding!!.layoutExactAlarm, binding!!.sbExactAlarm)
+        //自动点击反诈确认弹窗（无障碍）
+        autoConfirmSendSetting(binding!!.layoutAutoConfirm, binding!!.sbAutoConfirm)
         //接口请求失败重试时间间隔
         editRetryDelayTime(binding!!.xsbRetryTimes, binding!!.xsbDelayTime, binding!!.xsbTimeout)
 
@@ -220,6 +223,13 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
         super.onResume()
         //初始化APP下拉列表
         initAppSpinner()
+        //从无障碍设置返回后，刷新自动确认开关的真实状态
+        if (binding != null) {
+            val active = SettingUtils.enableAutoConfirmSend && SmsConfirmAccessibilityService.isEnabled(requireContext())
+            if (binding!!.sbAutoConfirm.isChecked != active) {
+                binding!!.sbAutoConfirm.isChecked = active
+            }
+        }
     }
 
     override fun initListeners() {
@@ -936,6 +946,38 @@ class SettingsFragment : BaseFragment<FragmentSettingsBinding?>(), View.OnClickL
                 //已声明 USE_EXACT_ALARM 的版本此权限实际不可关闭，保持真实状态即可
                 XToastUtils.info(R.string.isIgnored2)
                 sbExactAlarm.isChecked = alarmManager.canScheduleExactAlarms()
+            }
+        }
+    }
+
+    //自动点击反诈确认弹窗（开启即要求授权无障碍权限）
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    private fun autoConfirmSendSetting(layoutAutoConfirm: LinearLayout, sbAutoConfirm: SwitchButton) {
+        //仅国产定制系统存在反诈确认弹窗
+        if (!CommonUtils.isDomesticOem()) {
+            layoutAutoConfirm.visibility = View.GONE
+            return
+        }
+        layoutAutoConfirm.visibility = View.VISIBLE
+        sbAutoConfirm.isChecked = SettingUtils.enableAutoConfirmSend && SmsConfirmAccessibilityService.isEnabled(requireContext())
+        sbAutoConfirm.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
+            SettingUtils.enableAutoConfirmSend = isChecked
+            if (isChecked && !SmsConfirmAccessibilityService.isEnabled(requireContext())) {
+                //无障碍权限未授予：说明并跳转系统无障碍设置；取消则回退开关
+                MaterialDialog.Builder(requireContext())
+                    .title(R.string.auto_confirm_permission_title)
+                    .content(R.string.auto_confirm_permission_message)
+                    .positiveText(R.string.auto_confirm_permission_go)
+                    .onPositive { _: MaterialDialog?, _: DialogAction? ->
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                    .negativeText(R.string.setup_wizard_skip)
+                    .onNegative { _: MaterialDialog?, _: DialogAction? ->
+                        SettingUtils.enableAutoConfirmSend = false
+                        sbAutoConfirm.isChecked = false
+                    }
+                    .cancelable(false)
+                    .show()
             }
         }
     }

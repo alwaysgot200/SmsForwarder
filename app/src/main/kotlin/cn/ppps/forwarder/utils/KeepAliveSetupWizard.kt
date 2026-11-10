@@ -155,9 +155,11 @@ object KeepAliveSetupWizard {
         //6 小米反诈确认弹窗：小米/澎湃对"非验证码"短信发送强制人工确认（CTA 反诈要求，系统级）。
         //首选出路是开启本应用的无障碍"自动确认发送"（可编程检测，开启后此步自动跳过、
         //日后被关闭时 24h 审计会重新出现）；不想开启可关"启用系统优化"或改用网络通道
-        if (CommonUtils.isXiaomiFamily() && !SmsConfirmAccessibilityService.isEnabled(activity)) {
+        if (CommonUtils.isXiaomiFamily() && !(SettingUtils.enableAutoConfirmSend && SmsConfirmAccessibilityService.isEnabled(activity))) {
             add(
                 Step(STEP_SMS_CTA, R.string.setup_wizard_sms_cta_title, R.string.setup_wizard_sms_cta_message, R.string.setup_wizard_sms_cta_go) {
+                    //视同用户已选择启用该功能，无障碍授权完成后即自动生效（设置页开关同步打开）
+                    SettingUtils.enableAutoConfirmSend = true
                     it.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
             )

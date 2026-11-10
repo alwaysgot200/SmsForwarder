@@ -19,6 +19,9 @@ class SettingUtils private constructor() {
         //是否转发短信
         var enableSms: Boolean by SharedPreference(SP_ENABLE_SMS, false)
 
+        //反诈确认弹窗自动点击：开启后由无障碍服务自动点击"确认发送"（需无障碍权限已授予）
+        var enableAutoConfirmSend: Boolean by SharedPreference(SP_ENABLE_AUTO_CONFIRM_SEND, false)
+
         //是否转发通话
         var enablePhone: Boolean by SharedPreference(SP_ENABLE_PHONE, false)
 

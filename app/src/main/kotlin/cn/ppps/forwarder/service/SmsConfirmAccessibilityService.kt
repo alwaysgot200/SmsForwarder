@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import cn.ppps.forwarder.R
+import cn.ppps.forwarder.utils.SettingUtils
 import cn.ppps.forwarder.utils.XToastUtils
 import com.xuexiang.xutil.resource.ResUtils.getString
 
@@ -61,6 +62,8 @@ class SmsConfirmAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return
+        //应用内开关关闭时不动作（系统无障碍服务虽在运行，但用户已停用该功能）
+        if (!SettingUtils.enableAutoConfirmSend) return
         val pkg = event.packageName?.toString() ?: return
         if (SECURITY_PKG_PREFIXES.none { pkg.startsWith(it) }) return
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
