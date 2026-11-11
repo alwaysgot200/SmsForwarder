@@ -382,6 +382,8 @@
     <string name="setup_wizard_autostart_message">Without auto-start, removing the app card from Recents fully wipes the app. Please allow auto-start on the page that opens.</string>
     <string name="setup_wizard_power_save_title">Keep-alive step 4: Set battery saver to No restrictions</string>
     <string name="setup_wizard_power_save_message">Please allow this app to run in the background on the page that opens (set battery saver to No restrictions), to avoid being frozen off-network with the screen off.</string>
+    <string name="setup_wizard_restricted_settings_title">Prerequisite: Allow restricted settings</string>
+    <string name="setup_wizard_restricted_settings_message">On Android 13+, sideloaded apps (not installed from an app store) get “Restricted settings” enabled by default: the Accessibility and Notification access toggles are silently rejected (they switch back off), so the grants fail. On the App info page that opens, tap the ⋮ menu and choose “Allow restricted settings” first; then Accessibility and Notification access can be granted normally.</string>
     <string name="setup_wizard_notify_listen_title">Keep-alive step 5: Enable notification access (recommended)</string>
     <string name="setup_wizard_notify_listen_message">Used to forward APP notifications; this service is directly bound by the system — one of the strongest keep-alive anchors.</string>
     <string name="setup_wizard_lock_task_title">Final step: Lock the app in Recents</string>
@@ -405,6 +407,7 @@
     <string name="setup_wizard_skip">Not now</string>
     <string name="setup_wizard_skip_step">Skip this step</string>
     <string name="setup_wizard_ok">Got it</string>
+    <string name="keepalive_audit_channel_name">Keep-alive settings check reminder</string>
     <string name="keepalive_audit_notify_title">Keep-alive settings check</string>
     <string name="keepalive_audit_notify_content">%1$d keep-alive settings missing or reset: %2$s. Tap to fix.</string>
     <string name="kill_guide_title">The app was fully stopped by the system</string>

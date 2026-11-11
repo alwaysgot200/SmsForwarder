@@ -382,6 +382,8 @@
     <string name="setup_wizard_autostart_message">未开自启动时，划掉任务卡片会彻底清除本应用。请在打开的页面中将本应用设为允许自启动。</string>
     <string name="setup_wizard_power_save_title">保活第 4 步：省电策略设为无限制</string>
     <string name="setup_wizard_power_save_message">请在打开的页面中允许本应用后台运行（省电策略设为无限制/不受限制），避免熄屏后被冻结断网。</string>
+    <string name="setup_wizard_restricted_settings_title">保活前提：允许受限设置</string>
+    <string name="setup_wizard_restricted_settings_message">Android 13 及以上对“侧载安装”（非应用商店安装）的应用默认开启“受限设置”：无障碍、通知使用权等开关会被系统静默拒绝（打开后自动关闭），导致无法授权。请在打开的应用信息页点击右上角 ⋮ 菜单，选择“允许受限设置”，之后无障碍、通知使用权即可正常开启。</string>
     <string name="setup_wizard_notify_listen_title">保活第 5 步：开启通知使用权（推荐）</string>
     <string name="setup_wizard_notify_listen_message">用于转发 APP 通知；该服务由系统直接绑定运行，是最强的保活锚点之一。</string>
     <string name="setup_wizard_lock_task_title">保活最后一步：最近任务加锁</string>
@@ -405,6 +407,7 @@
     <string name="setup_wizard_skip">暂不</string>
     <string name="setup_wizard_skip_step">跳过此步</string>
     <string name="setup_wizard_ok">知道了</string>
+    <string name="keepalive_audit_channel_name">保活设置检查提醒</string>
     <string name="keepalive_audit_notify_title">保活设置检查</string>
     <string name="keepalive_audit_notify_content">检测到 %1$d 项保活设置缺失或被重置：%2$s，点击补充设置</string>
     <string name="kill_guide_title">检测到应用曾被系统彻底停止</string>

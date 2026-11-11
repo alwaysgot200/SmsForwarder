@@ -2,11 +2,13 @@ package cn.ppps.forwarder.utils
 
 import android.app.Activity
 import android.app.AlarmManager
+import android.app.AppOpsManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.provider.Telephony
@@ -46,6 +48,9 @@ object KeepAliveSetupWizard {
     private const val STEP_SMS_CTA = 7
     private const val STEP_SMS_CODE_PROTECT = 8
 
+    //Android 13+ 侧载应用"允许受限设置"（无障碍/通知使用权授权的前置条件）
+    private const val STEP_RESTRICTED_SETTINGS = 9
+
     private const val SP_SETUP_DONE = "keepalive_setup_wizard_done"
     private const val SP_SETUP_VISITED = "keepalive_setup_wizard_visited"
     private const val SP_LAST_AUDIT = "keepalive_audit_ts"
@@ -60,17 +65,19 @@ object KeepAliveSetupWizard {
     //后台审计缺项提醒通知
     private const val AUDIT_NOTIFY_ID = 0x1012
     private const val AUDIT_CHANNEL_ID = "cn.ppps.forwarder.keepalive_audit"
-    private const val AUDIT_CHANNEL_NAME = "保活设置检查提醒"
 
     //可编程判定的设置项：跳过后若仍缺省，审计时按实时状态重新出现引导补充；
     //不可检测的厂商项（自启动/省电策略/验证码保护/最近任务锁）"去过即算"，不再重复打扰
-    private val DETECTABLE_STEPS = setOf(STEP_BATTERY, STEP_EXACT_ALARM, STEP_NOTIFY_LISTEN, STEP_SMS_CTA)
+    private val DETECTABLE_STEPS = setOf(STEP_RESTRICTED_SETTINGS, STEP_BATTERY, STEP_EXACT_ALARM, STEP_NOTIFY_LISTEN, STEP_SMS_CTA)
 
     //从"去设置"跳出后置位，回到应用时据此推进下一步
     private var waitingReturn = false
 
     //向导/审计对话框是否正在显示（避免 onResume 重复弹窗堆叠）
     private var dialogOpen = false
+
+    //对话框代次：dismiss 回调只复位当前代次的标志，避免关闭旧弹窗时误清新弹窗的状态
+    private var dialogGeneration = 0
 
     //本轮是否为审计模式（可检测项忽略"去过"标记按实时状态重新出现），onResumed 沿用
     private var auditMode = false
@@ -163,6 +170,9 @@ object KeepAliveSetupWizard {
     /** 可编程判定的缺项（无需 Activity），返回缺失步骤的标题资源 */
     private fun missingDetectableSteps(context: Context): List<Int> {
         val missing = mutableListOf<Int>()
+        if (isRestrictedSettingsBlocked(context)) {
+            missing.add(R.string.setup_wizard_restricted_settings_title)
+        }
         if (!KeepAliveUtils.isIgnoreBatteryOptimization(context)) {
             missing.add(R.string.setup_wizard_battery_title)
         }
@@ -181,12 +191,28 @@ object KeepAliveSetupWizard {
         return missing
     }
 
+    /**
+     * Android 13+ 侧载应用"受限设置"是否仍在拦截：系统以 ACCESS_RESTRICTED_SETTINGS=ignore
+     * 标记侧载安装的应用，无障碍/通知使用权授权会被静默拒绝或回滚（REDMI 真机实测）。
+     * 未知该操作的系统（老版本/部分定制 ROM）按未受限处理，向导自动跳过。
+     */
+    private fun isRestrictedSettingsBlocked(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+        return try {
+            val appOps = context.getSystemService(AppOpsManager::class.java)
+            val mode = appOps.unsafeCheckOpNoThrow("ACCESS_RESTRICTED_SETTINGS", context.applicationInfo.uid, context.packageName)
+            mode == AppOpsManager.MODE_IGNORED
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     /** 缺项提醒通知：点击进入主窗口，由 [auditIfNeeded] 立即弹出补充向导 */
     private fun postAuditNotification(context: Context, missingTitleRes: List<Int>) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
-                NotificationChannel(AUDIT_CHANNEL_ID, AUDIT_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
+                NotificationChannel(AUDIT_CHANNEL_ID, context.getString(R.string.keepalive_audit_channel_name), NotificationManager.IMPORTANCE_DEFAULT)
             )
         }
         val names = missingTitleRes.joinToString("、") { context.getString(it) }
@@ -238,6 +264,15 @@ object KeepAliveSetupWizard {
             add(
                 Step(STEP_POWER_SAVE, R.string.setup_wizard_power_save_title, R.string.setup_wizard_power_save_message, R.string.setup_wizard_go) {
                     CommonUtils.startToPowerSaveSetting(it)
+                }
+            )
+        }
+        //允许受限设置（前置条件）：Android 13+ 侧载应用默认被"受限设置"拦截，无障碍与
+        //通知使用权开关会被系统静默拒绝/回滚（REDMI 真机实测），须先在应用信息 ⋮ 菜单解除
+        if (isRestrictedSettingsBlocked(activity)) {
+            add(
+                Step(STEP_RESTRICTED_SETTINGS, R.string.setup_wizard_restricted_settings_title, R.string.setup_wizard_restricted_settings_message, R.string.setup_wizard_go) {
+                    it.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${it.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
             )
         }
@@ -307,6 +342,7 @@ object KeepAliveSetupWizard {
         content.append("\n\n").append(activity.getString(R.string.setup_wizard_remain_hint, pending.size))
 
         dialogOpen = true
+        val generation = ++dialogGeneration
         MaterialDialog.Builder(activity)
             .title(step.titleRes)
             .content(content)
@@ -333,6 +369,9 @@ object KeepAliveSetupWizard {
                 showNextPending(activity)
             }
             .cancelable(false)
+            //对话框被销毁（旋转/关闭页面/按钮触发）时复位标志，防止 dialogOpen 卡死后
+            //auditIfNeeded/向导被永久阻塞；代次校验避免误清新弹窗的状态
+            .dismissListener { if (generation == dialogGeneration) dialogOpen = false }
             .show()
     }
 

@@ -380,11 +380,11 @@ class ForegroundService : Service() {
     }
 
     private fun stopForegroundService() {
+        isRunning = false
         try {
             stopForeground(true)
             stopSelf()
             compositeDisposable.dispose()
-            isRunning = false
             alarmPlayer?.release()
             alarmPlayer = null
             //停止振动
@@ -505,7 +505,6 @@ class ForegroundService : Service() {
     private fun handleException(e: Exception, methodName: String) {
         e.printStackTrace()
         Log.e(TAG, "$methodName: $e")
-        isRunning = false
     }
 
 }
