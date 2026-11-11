@@ -329,9 +329,10 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
 
     override fun onResume() {
         super.onResume()
-        //保活缺项审计：静默自愈（拉起前台服务）+ 定期缺项弹窗；从厂商设置页返回后继续向导下一步
-        KeepAliveSetupWizard.auditIfNeeded(this)
+        //先从厂商设置页返回后驱动向导下一步，再做保活缺项审计（静默自愈+定期缺项弹窗），
+        //避免审计路径打断向导推进导致跳回第一步
         KeepAliveSetupWizard.onResumed(this)
+        KeepAliveSetupWizard.auditIfNeeded(this)
     }
 
     //被杀未复苏检测：上次看门狗心跳断档超过阈值，说明曾被厂商系统力停清理且未能自动恢复，

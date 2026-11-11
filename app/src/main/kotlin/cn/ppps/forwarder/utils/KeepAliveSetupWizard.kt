@@ -102,7 +102,10 @@ object KeepAliveSetupWizard {
     /** 首启/未完成时进入向导；在权限授权流程结束后调用 */
     fun maybeRun(activity: Activity) {
         if (!isPending(activity)) return
-        showNextPending(activity, audit = false, newRound = true)
+        //对话框已打开或正等待从设置页返回时不重复弹（权限回调与 onResume 存在时序竞争）
+        if (dialogOpen || waitingReturn) return
+        //不重开新轮：向导严格向前推进，已展示过的步骤不会因页面重建/返回又跳回第一步
+        showNextPending(activity, audit = false, newRound = false)
     }
 
     /** 从厂商设置页返回后驱动下一步（向导与审计两条路径共用，不检查 done 标记） */
@@ -130,9 +133,9 @@ object KeepAliveSetupWizard {
 
         if (dialogOpen || waitingReturn) return
 
-        //首启向导未完成：不限流，继续引导
+        //首启向导未完成：不限流，继续引导（不重开新轮，向导只向前推进，防止跳回第一步）
         if (isPending(activity)) {
-            showNextPending(activity, audit = false, newRound = true)
+            showNextPending(activity, audit = false, newRound = false)
             return
         }
 
@@ -343,8 +346,21 @@ object KeepAliveSetupWizard {
 
         dialogOpen = true
         val generation = ++dialogGeneration
+        //向导模式按实际展示顺序连续编号（自动跳过的步骤不占号，消除固定标题的序号断档）；
+        //审计模式为缺项复查，沿用固定标题
+        val title = if (audit) {
+            activity.getString(step.titleRes)
+        } else {
+            val full = activity.getString(step.titleRes)
+            val name = when {
+                full.contains("：") -> full.substringAfter("：")
+                full.contains(": ") -> full.substringAfter(": ")
+                else -> full
+            }
+            activity.getString(R.string.setup_wizard_step_title_fmt, visited.size + 1, name)
+        }
         MaterialDialog.Builder(activity)
-            .title(step.titleRes)
+            .title(title)
             .content(content)
             .positiveText(step.goRes)
             .onPositive { _: MaterialDialog?, _: DialogAction? ->
@@ -376,21 +392,21 @@ object KeepAliveSetupWizard {
     }
 
     private fun finishWizard(activity: Activity) {
-        var done: Boolean by SharedPreference(SP_SETUP_DONE, false)
-        done = true
+        //同步落盘：跳转设置页期间进程可能被杀，异步 apply 丢失完成标记会导致向导重复出现
+        SharedPreference.preference.edit().putBoolean(SP_SETUP_DONE, true).commit()
         Log.i(KeepAliveSetupWizard::class.java.simpleName, "保活设置向导完成")
     }
 
     private fun loadVisited(activity: Activity): MutableSet<Int> {
-        var raw: String by SharedPreference(SP_SETUP_VISITED, "")
+        val raw = SharedPreference.preference.getString(SP_SETUP_VISITED, "") ?: ""
         return raw.split(",").mapNotNull { it.toIntOrNull() }.toMutableSet()
     }
 
     private fun markVisited(activity: Activity, stepId: Int) {
         val visited = loadVisited(activity)
         visited.add(stepId)
-        var raw: String by SharedPreference(SP_SETUP_VISITED, "")
-        raw = visited.joinToString(",")
+        //同步落盘：防止跳转设置页期间进程被杀丢失"去过"标记，导致向导跳回第一步循环
+        SharedPreference.preference.edit().putString(SP_SETUP_VISITED, visited.joinToString(",")).commit()
     }
 
 }

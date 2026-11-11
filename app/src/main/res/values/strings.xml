@@ -405,6 +405,7 @@
     <string name="exact_alarm_setting">允许精确闹钟（保活加固）</string>
     <string name="kill_guide_go_auto_start">去开启自启动</string>
     <string name="kill_guide_go_power_save">省电策略设置</string>
+    <string name="setup_wizard_step_title_fmt">保活第 %1$d 步：%2$s</string>
     <string name="setup_wizard_battery_title">保活第 1 步：忽略电池优化</string>
     <string name="setup_wizard_battery_message">系统即将弹出授权框，请选择“允许”。此项能防止熄屏后系统休眠断网导致转发延迟。</string>
     <string name="setup_wizard_exact_alarm_title">保活第 2 步：允许精确闹钟</string>
