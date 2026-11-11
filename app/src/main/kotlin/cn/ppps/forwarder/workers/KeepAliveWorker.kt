@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import cn.ppps.forwarder.receiver.KeepAliveReceiver
 import cn.ppps.forwarder.service.ForegroundService
+import cn.ppps.forwarder.utils.KeepAliveUtils
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
 
@@ -26,6 +27,10 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
     override suspend fun doWork(): Result {
         //纯客户端模式不保活
         if (SettingUtils.enablePureClientMode) return Result.success()
+
+        //存活心跳：WM 看门狗能触发说明应用仍在被系统调度（厂商取消闹钟但 WM 仍自愈时，
+        //服务并未失守），刷新心跳避免"被杀未复苏"引导误报
+        KeepAliveUtils.recordHeartbeat(applicationContext)
 
         if (!ForegroundService.isRunning) {
             Log.w(TAG, "WM看门狗：前台服务未运行，重新拉起")

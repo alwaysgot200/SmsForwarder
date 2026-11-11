@@ -101,11 +101,9 @@ class ForegroundService : Service() {
 
     // 振动控制
     private lateinit var vibrationUtils: VibrationUtils
-    private var isVibrating = false
 
     // 闪光灯控制
     private lateinit var flashUtils: FlashUtils
-    private var isFlash = false
 
     // 音乐播放器
     private var alarmPlayer: MediaPlayer? = null
@@ -193,12 +191,10 @@ class ForegroundService : Service() {
             }
             //振动提醒
             if (alarm.repeatTimes >= 0) {
-                isVibrating = true
                 vibrationUtils.startVibration(alarm.vibrate, alarm.repeatTimes)
             }
             //闪光灯提醒
             if (alarm.flashTimes >= 0 && ::flashUtils.isInitialized && flashUtils.isFlashSupported) {
-                isFlash = true
                 flashUtils.startFlashing(alarm.flash, alarm.flashTimes)
             }
         }
@@ -232,8 +228,14 @@ class ForegroundService : Service() {
         //纯客户端模式
         if (SettingUtils.enablePureClientMode) return START_NOT_STICKY
 
-        //确保看门狗心跳链持续（覆盖式替换，不会累积闹钟）
-        KeepAliveUtils.scheduleServiceWatchdog(this)
+        //确保看门狗心跳链持续（覆盖式替换，不会累积闹钟）；
+        //主动停止时不仅不重排，还要取消已排心跳——否则 ACTION_STOP 之前排定的看门狗
+        //会在下轮心跳复活服务，与停止意图自相矛盾
+        if (intent?.action == ACTION_STOP) {
+            KeepAliveUtils.cancelWatchdog(this)
+        } else {
+            KeepAliveUtils.scheduleServiceWatchdog(this)
+        }
 
         if (intent != null) {
             when (intent.action) {
@@ -260,6 +262,10 @@ class ForegroundService : Service() {
                     updateNotification(SettingUtils.notifyContent)
                 }
             }
+        } else {
+            //START_STICKY 被系统拉起时 intent 为 null：按启动处理，保证 5 秒内调用 startForeground
+            deliberateStop = false
+            startForegroundService()
         }
         return START_STICKY
     }

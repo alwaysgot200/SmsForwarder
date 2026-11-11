@@ -102,35 +102,39 @@ class MmsDbObserver(private val context: Context) : ContentObserver(handler) {
 
             val processed = loadProcessed()
             var handledMax = lastId
-            var pending = false
+            //下载中行的最小 _id：水位线必须停在它之下，否则后续行处理后水位线越过它会永久漏转发
+            var pendingMinId = Long.MAX_VALUE
             var dispatched = 0
 
             for (row in rows) {
-                if (row.id in processed) continue
-                val content = extractText(row.id)
+                if (row.id !in processed) {
+                    val content = extractText(row.id)
 
-                if (!content.hasParts) {
-                    if (System.currentTimeMillis() - row.dateSec * 1000L < DOWNLOAD_TIMEOUT_MS) {
-                        //通知行已入库但内容尚未下载：挡住水位线，稍后自动重扫
-                        pending = true
-                        continue
+                    if (!content.hasParts) {
+                        if (System.currentTimeMillis() - row.dateSec * 1000L < DOWNLOAD_TIMEOUT_MS) {
+                            //通知行已入库但内容尚未下载：挡住水位线，稍后自动重扫
+                            pendingMinId = minOf(pendingMinId, row.id)
+                            continue
+                        }
+                        Log.i(TAG, "彩信 ${row.id} 超时未下载，跳过")
+                    } else if (content.text.isBlank()) {
+                        Log.i(TAG, "彩信 ${row.id} 无文字部分（纯图片/多媒体），按需忽略")
+                    } else {
+                        val sender = querySender(row.id)
+                        val msgInfo = MsgInfo("sms", sender, content.text.take(CONTENT_MAX_CHARS), Date(row.dateSec * 1000L), "", -1, row.subId)
+                        Log.d(TAG, "彩信库补漏: msgInfo = $msgInfo")
+                        SmsUtils.dispatch(context, msgInfo, SmsUtils.CHANNEL_DB)
+                        dispatched++
                     }
-                    Log.i(TAG, "彩信 ${row.id} 超时未下载，跳过")
-                } else if (content.text.isBlank()) {
-                    Log.i(TAG, "彩信 ${row.id} 无文字部分（纯图片/多媒体），按需忽略")
-                } else {
-                    val sender = querySender(row.id)
-                    val msgInfo = MsgInfo("sms", sender, content.text.take(CONTENT_MAX_CHARS), Date(row.dateSec * 1000L), "", -1, row.subId)
-                    Log.d(TAG, "彩信库补漏: msgInfo = $msgInfo")
-                    SmsUtils.dispatch(context, msgInfo, SmsUtils.CHANNEL_DB)
-                    dispatched++
-                }
 
-                processed += row.id
+                    processed += row.id
+                }
+                //已处理行（含此前已入库的）同样计入水位线推进量，最终水位线再按下载中行钳制
                 handledMax = maxOf(handledMax, row.id)
             }
 
-            lastId = handledMax
+            val pending = pendingMinId != Long.MAX_VALUE
+            lastId = if (pending) minOf(handledMax, pendingMinId - 1) else handledMax
             saveProcessed(processed)
             Log.i(TAG, "彩信补漏扫描完成：转发 $dispatched 条，水位线 lastId = $lastId" + (if (pending) "，存在下载中的彩信待重扫" else ""))
 

@@ -36,7 +36,8 @@ class NotificationService : NotificationListenerService() {
 
         Log.d(TAG, "通知侦听器断开连接 - 请求重新绑定")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            requestRebind(ComponentName(this, NotificationListenerService::class.java))
+            //必须传本服务的组件名（传基类框架组件名无法匹配清单声明，重绑定请求会被静默忽略）
+            requestRebind(ComponentName(this, javaClass))
         }
     }
 

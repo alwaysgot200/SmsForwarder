@@ -130,6 +130,11 @@ class App : Application(), Configuration.Provider by Core {
         var isNeedSpaceBetweenWords = false
     }
 
+    //ContentObserver 必须持有强引用：仅注册到 ContentResolver 而不持有实例可能被 GC 回收，
+    //监听静默失效导致漏转发
+    private val smsDbObserver = SmsDbObserver(this)
+    private val mmsDbObserver = MmsDbObserver(this)
+
     override fun attachBaseContext(base: Context) {
         //super.attachBaseContext(base)
         // 绑定语种
@@ -264,9 +269,9 @@ class App : Application(), Configuration.Provider by Core {
             registerReceiver(lockScreenReceiver, lockScreenFilter)
 
             //监听短信库变更，兜底捕获不触发 SMS_RECEIVED 广播的短信（如系统"智能信息"通道写入的短信）
-            SmsDbObserver(applicationContext).register()
+            smsDbObserver.register()
             //监听彩信库变更，转发彩信的文字部分（用户需求：只要文字，不要图片/多媒体）
-            MmsDbObserver(applicationContext).register()
+            mmsDbObserver.register()
             //靠近听筒关屏
             ProximitySensorScreenHelper.refresh(this)
 

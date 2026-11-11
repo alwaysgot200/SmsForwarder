@@ -134,6 +134,23 @@ class KeepAliveUtils private constructor() {
         }
 
         /**
+         * 取消保活看门狗心跳（主动停止服务时调用）：不取消的话，停止前排定的闹钟仍会在
+         * 下轮心跳把服务复活，与停止意图自相矛盾。
+         */
+        fun cancelWatchdog(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, KeepAliveReceiver::class.java).setAction(ACTION_KEEPALIVE_CHECK)
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, flags)
+            alarmManager.cancel(pendingIntent)
+            Log.d(TAG, "看门狗心跳已取消")
+        }
+
+        /**
          * 按亮灭屏自适应安排看门狗心跳：灭屏期间厂商查杀风险高且短信转发延迟代价大，
          * 用短周期；亮屏恢复常规周期。用于周期性重排（心跳触发后、应用启动时）。
          */
