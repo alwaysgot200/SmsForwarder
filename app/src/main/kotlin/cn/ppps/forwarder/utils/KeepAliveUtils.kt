@@ -57,13 +57,13 @@ class KeepAliveUtils private constructor() {
             recordHeartbeat(context)
         }
 
-        fun isIgnoreBatteryOptimization(activity: Activity): Boolean {
+        fun isIgnoreBatteryOptimization(context: Context): Boolean {
             //安卓6.0以下没有忽略电池优化
             return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                 true
             } else try {
-                val powerManager: PowerManager = activity.getSystemService(Context.POWER_SERVICE) as PowerManager
-                powerManager.isIgnoringBatteryOptimizations(activity.packageName)
+                val powerManager: PowerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                powerManager.isIgnoringBatteryOptimizations(context.packageName)
             } catch (e: Exception) {
                 XToastUtils.error(R.string.unsupport)
                 false

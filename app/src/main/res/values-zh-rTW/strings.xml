@@ -403,7 +403,10 @@
     <string name="setup_wizard_remain_hint">保活設定精靈：完成後不再打擾，剩餘 %1$d 步</string>
     <string name="setup_wizard_go">前往設定</string>
     <string name="setup_wizard_skip">暫不</string>
+    <string name="setup_wizard_skip_step">跳過此步</string>
     <string name="setup_wizard_ok">知道了</string>
+    <string name="keepalive_audit_notify_title">保活設定檢查</string>
+    <string name="keepalive_audit_notify_content">檢測到 %1$d 項保活設定缺失或被重置：%2$s，點擊補充設定</string>
     <string name="kill_guide_title">偵測到應用曾被系統徹底停止</string>
     <string name="kill_guide_message">應用上次執行期間被系統後台清理且未能自動恢復（部分廠商的「劃卡清理」等同強制停止，會取消所有自動恢復機制）。請開啟以下權限以保證簡訊轉發持續可用：
 1. 自啟動管理 → 允許自啟動

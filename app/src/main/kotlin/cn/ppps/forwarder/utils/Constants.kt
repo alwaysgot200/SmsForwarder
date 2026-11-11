@@ -151,6 +151,11 @@ const val FRONT_NOTIFY_ID = 0x1010
 const val FRONT_CHANNEL_ID = "cn.ppps.forwarder"
 const val FRONT_CHANNEL_NAME = "SmsForwarder Foreground Service"
 
+//保活锚点通知：独立于前台服务通知，进程被厂商系统查杀后仍常驻通知栏，供用户点击唤回应用
+const val FRONT_ANCHOR_NOTIFY_ID = 0x1011
+const val FRONT_ANCHOR_CHANNEL_ID = "cn.ppps.forwarder.keepalive"
+const val FRONT_ANCHOR_CHANNEL_NAME = "SmsForwarder Keep Alive"
+
 //Frp内网穿透
 const val FRPC_LIB_DOWNLOAD_URL = "https://xupdate.ppps.cn/uploads/%s/%s/libgojni.so"
 const val FRPC_LIB_VERSION = "0.57.0"

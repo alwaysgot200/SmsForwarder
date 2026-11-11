@@ -33,6 +33,9 @@ import cn.ppps.forwarder.utils.CommonUtils
 import cn.ppps.forwarder.utils.EVENT_ALARM_ACTION
 import cn.ppps.forwarder.utils.EVENT_FRPC_RUNNING_ERROR
 import cn.ppps.forwarder.utils.EVENT_FRPC_RUNNING_SUCCESS
+import cn.ppps.forwarder.utils.FRONT_ANCHOR_CHANNEL_ID
+import cn.ppps.forwarder.utils.FRONT_ANCHOR_CHANNEL_NAME
+import cn.ppps.forwarder.utils.FRONT_ANCHOR_NOTIFY_ID
 import cn.ppps.forwarder.utils.FRONT_CHANNEL_ID
 import cn.ppps.forwarder.utils.FRONT_CHANNEL_NAME
 import cn.ppps.forwarder.utils.FRONT_NOTIFY_ID
@@ -243,6 +246,8 @@ class ForegroundService : Service() {
                     //主动停止：onDestroy 不再安排看门狗复活（否则与停止意图自相矛盾）
                     deliberateStop = true
                     stopForegroundService()
+                    //主动停止才移除保活锚点通知（系统查杀不清除锚点，供用户唤回）
+                    cancelAnchorNotification()
                 }
 
                 ACTION_UPDATE_NOTIFICATION -> {
@@ -310,6 +315,9 @@ class ForegroundService : Service() {
         } else {
             startForeground(FRONT_NOTIFY_ID, notification)
         }
+
+        //每次 START 都确保保活锚点通知常驻（进程被查杀后仍可点击唤回）
+        postAnchorNotification()
 
         if (isRunning) return
         isRunning = true
@@ -405,6 +413,14 @@ class ForegroundService : Service() {
             if (notificationManager != null) {
                 notificationManager!!.createNotificationChannel(notificationChannel)
             }
+
+            //保活锚点渠道：常驻、无提示音，进程被查杀后仍留在通知栏供点击唤回
+            val anchorChannel = NotificationChannel(FRONT_ANCHOR_CHANNEL_ID, FRONT_ANCHOR_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
+            anchorChannel.description = getString(R.string.keepalive_tap_open)
+            anchorChannel.setSound(null, null)
+            anchorChannel.enableVibration(false)
+            anchorChannel.enableLights(false)
+            notificationManager?.createNotificationChannel(anchorChannel)
         }
     }
 
@@ -420,6 +436,10 @@ class ForegroundService : Service() {
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, flags)
 
         val builder = NotificationCompat.Builder(this, FRONT_CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(content).setSmallIcon(R.drawable.ic_forwarder).setContentIntent(pendingIntent).setWhen(System.currentTimeMillis())
+        //前台服务通知常驻、公开可见、点击唤回，避免被系统或用户轻易划除
+        builder.setOngoing(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
 
         // 设置大图标（可选）
         if (largeIconResId != null) {
@@ -446,6 +466,39 @@ class ForegroundService : Service() {
             notificationManager?.notify(FRONT_NOTIFY_ID, notification)
         } catch (e: Exception) {
             handleException(e, "updateNotification")
+        }
+    }
+
+    /**
+     * 保活锚点通知：独立于前台服务通知，使用普通 NotificationManager.notify 常驻通知栏。
+     * 前台服务通知随服务被厂商系统查杀而消失，但锚点通知不依赖服务存活——
+     * 进程被划掉查杀后仍留在状态栏/通知栏，用户可点击唤回应用并恢复转发。
+     */
+    private fun postAnchorNotification() {
+        try {
+            val notificationIntent = Intent(this, MainActivity::class.java)
+            val flags = if (Build.VERSION.SDK_INT >= 30) PendingIntent.FLAG_IMMUTABLE else PendingIntent.FLAG_UPDATE_CURRENT
+            val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, flags)
+
+            val builder = NotificationCompat.Builder(this, FRONT_ANCHOR_CHANNEL_ID)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.keepalive_tap_open))
+                .setSmallIcon(R.drawable.ic_forwarder)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setWhen(System.currentTimeMillis())
+            notificationManager?.notify(FRONT_ANCHOR_NOTIFY_ID, builder.build())
+        } catch (e: Exception) {
+            handleException(e, "postAnchorNotification")
+        }
+    }
+
+    private fun cancelAnchorNotification() {
+        try {
+            notificationManager?.cancel(FRONT_ANCHOR_NOTIFY_ID)
+        } catch (e: Exception) {
+            handleException(e, "cancelAnchorNotification")
         }
     }
 

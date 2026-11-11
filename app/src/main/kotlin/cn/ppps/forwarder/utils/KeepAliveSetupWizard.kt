@@ -2,12 +2,17 @@ package cn.ppps.forwarder.utils
 
 import android.app.Activity
 import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import android.provider.Telephony
+import androidx.core.app.NotificationCompat
 import cn.ppps.forwarder.R
+import cn.ppps.forwarder.activity.MainActivity
 import cn.ppps.forwarder.service.SmsConfirmAccessibilityService
 import com.xuexiang.xui.widget.dialog.materialdialog.DialogAction
 import com.xuexiang.xui.widget.dialog.materialdialog.MaterialDialog
@@ -22,7 +27,11 @@ import com.xuexiang.xui.widget.dialog.materialdialog.MaterialDialog
  * 步骤按保活权重排序：忽略电池优化 → 精确闹钟 → 厂商自启动 → 厂商省电策略 →
  * 通知使用权（系统强绑定锚点）→ 小米反诈确认自动点击（仅小米系，可检测）→
  * 验证码安全保护关闭（国产系，"去过即算"）→ 最近任务加锁说明。
- * 从设置页返回后自动进入下一步（[onResumed] 驱动）；全部完成或用户跳过后不再打扰，
+ * 安装首启强制逐步引导：对话框不可取消，每步必须逐一点击"去设置/跳过此步"才能推进，
+ * 无法一键跳过整个向导；从设置页返回后自动进入下一步（[onResumed] 驱动）。
+ * 向导完成后由 [auditInBackground] 每 24 小时自动复查全部设置（无需打开主窗口），
+ * 可编程判定项（电池优化/精确闹钟/通知使用权/小米反诈点击）回归缺省时发通知引导补充；
+ * 可检测项在主窗口审计（[auditIfNeeded]）中同样按实时状态重新出现。
  * 后续若仍发生"被杀未复苏"，由 [cn.ppps.forwarder.activity.MainActivity] 的心跳检测引导兜底。
  */
 object KeepAliveSetupWizard {
@@ -41,14 +50,33 @@ object KeepAliveSetupWizard {
     private const val SP_SETUP_VISITED = "keepalive_setup_wizard_visited"
     private const val SP_LAST_AUDIT = "keepalive_audit_ts"
 
-    //缺项审计周期：向导完成后每隔该时长复查一次（打开主窗口时触发），发现缺项立即弹窗
+    //后台自动审计时间戳（[auditInBackground] 用，与主窗口审计分开节流）
+    private const val SP_LAST_BG_AUDIT = "keepalive_bg_audit_ts"
+
+    //缺项审计周期：向导完成后每隔该时长复查一次（打开主窗口 [auditIfNeeded] /
+    //后台 [auditInBackground] 两条路径触发），发现缺项立即提醒
     private const val AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000L
+
+    //后台审计缺项提醒通知
+    private const val AUDIT_NOTIFY_ID = 0x1012
+    private const val AUDIT_CHANNEL_ID = "cn.ppps.forwarder.keepalive_audit"
+    private const val AUDIT_CHANNEL_NAME = "保活设置检查提醒"
+
+    //可编程判定的设置项：跳过后若仍缺省，审计时按实时状态重新出现引导补充；
+    //不可检测的厂商项（自启动/省电策略/验证码保护/最近任务锁）"去过即算"，不再重复打扰
+    private val DETECTABLE_STEPS = setOf(STEP_BATTERY, STEP_EXACT_ALARM, STEP_NOTIFY_LISTEN, STEP_SMS_CTA)
 
     //从"去设置"跳出后置位，回到应用时据此推进下一步
     private var waitingReturn = false
 
     //向导/审计对话框是否正在显示（避免 onResume 重复弹窗堆叠）
     private var dialogOpen = false
+
+    //本轮是否为审计模式（可检测项忽略"去过"标记按实时状态重新出现），onResumed 沿用
+    private var auditMode = false
+
+    //本轮已处理（去设置/跳过）的步骤：审计模式下可检测项忽略"去过"标记，需按轮去重避免重复弹窗
+    private val roundHandled = mutableSetOf<Int>()
 
     private data class Step(
         val id: Int,
@@ -67,7 +95,7 @@ object KeepAliveSetupWizard {
     /** 首启/未完成时进入向导；在权限授权流程结束后调用 */
     fun maybeRun(activity: Activity) {
         if (!isPending(activity)) return
-        showNextPending(activity)
+        showNextPending(activity, audit = false, newRound = true)
     }
 
     /** 从厂商设置页返回后驱动下一步（向导与审计两条路径共用，不检查 done 标记） */
@@ -97,16 +125,85 @@ object KeepAliveSetupWizard {
 
         //首启向导未完成：不限流，继续引导
         if (isPending(activity)) {
-            showNextPending(activity)
+            showNextPending(activity, audit = false, newRound = true)
             return
         }
 
-        //向导已完成：限流复查缺项
+        //向导已完成：限流复查缺项（可检测项按实时状态重新出现）
         var lastAudit: Long by SharedPreference(SP_LAST_AUDIT, 0L)
         val now = System.currentTimeMillis()
         if (now - lastAudit < AUDIT_INTERVAL_MS) return
         lastAudit = now
-        showNextPending(activity)
+        showNextPending(activity, audit = true, newRound = true)
+    }
+
+    /**
+     * 24 小时后台自动检测：由 [cn.ppps.forwarder.receiver.KeepAliveReceiver] 看门狗触发，
+     * 无需打开主窗口。检测所有可编程判定的条件设置（电池优化/精确闹钟/通知使用权/小米反诈自动点击），
+     * 发现缺项时发通知引导用户点击补充；同时重置主窗口审计节流，点开应用立即弹出缺项向导。
+     */
+    fun auditInBackground(context: Context) {
+        if (SettingUtils.enablePureClientMode) return
+
+        var lastAudit: Long by SharedPreference(SP_LAST_BG_AUDIT, 0L)
+        val now = System.currentTimeMillis()
+        if (now - lastAudit < AUDIT_INTERVAL_MS) return
+        lastAudit = now
+
+        val missing = missingDetectableSteps(context)
+        if (missing.isEmpty()) return
+
+        //重置主窗口审计节流：点开通知进入主窗口时立即弹出缺项补充向导
+        var lastUiAudit: Long by SharedPreference(SP_LAST_AUDIT, 0L)
+        lastUiAudit = 0L
+
+        postAuditNotification(context, missing)
+    }
+
+    /** 可编程判定的缺项（无需 Activity），返回缺失步骤的标题资源 */
+    private fun missingDetectableSteps(context: Context): List<Int> {
+        val missing = mutableListOf<Int>()
+        if (!KeepAliveUtils.isIgnoreBatteryOptimization(context)) {
+            missing.add(R.string.setup_wizard_battery_title)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                missing.add(R.string.setup_wizard_exact_alarm_title)
+            }
+        }
+        if (!CommonUtils.isNotificationListenerServiceEnabled(context)) {
+            missing.add(R.string.setup_wizard_notify_listen_title)
+        }
+        if (CommonUtils.isXiaomiFamily() && !(SettingUtils.enableAutoConfirmSend && SmsConfirmAccessibilityService.isEnabled(context))) {
+            missing.add(R.string.setup_wizard_sms_cta_title)
+        }
+        return missing
+    }
+
+    /** 缺项提醒通知：点击进入主窗口，由 [auditIfNeeded] 立即弹出补充向导 */
+    private fun postAuditNotification(context: Context, missingTitleRes: List<Int>) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.createNotificationChannel(
+                NotificationChannel(AUDIT_CHANNEL_ID, AUDIT_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
+            )
+        }
+        val names = missingTitleRes.joinToString("、") { context.getString(it) }
+        val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, AUDIT_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_forwarder)
+            .setContentTitle(context.getString(R.string.keepalive_audit_notify_title))
+            .setContentText(context.getString(R.string.keepalive_audit_notify_content, missingTitleRes.size, names))
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        manager.notify(AUDIT_NOTIFY_ID, notification)
     }
 
     private fun buildSteps(activity: Activity): List<Step> = buildList {
@@ -186,10 +283,16 @@ object KeepAliveSetupWizard {
         )
     }
 
-    private fun showNextPending(activity: Activity) {
+    private fun showNextPending(activity: Activity, audit: Boolean = auditMode, newRound: Boolean = false) {
+        auditMode = audit
+        if (newRound) roundHandled.clear()
         val steps = buildSteps(activity)
         val visited = loadVisited(activity)
-        val pending = steps.filter { !visited.contains(it.id) }
+        //向导模式：按"去过"标记逐个推进，每步必须逐一点击处理（强制引导）；
+        //审计模式：可检测项忽略"去过"标记按实时状态重新出现，本轮已处理的不重复弹
+        val pending = steps.filter {
+            (!visited.contains(it.id) || (audit && DETECTABLE_STEPS.contains(it.id))) && !roundHandled.contains(it.id)
+        }
 
         if (pending.isEmpty()) {
             finishWizard(activity)
@@ -211,6 +314,7 @@ object KeepAliveSetupWizard {
             .onPositive { _: MaterialDialog?, _: DialogAction? ->
                 dialogOpen = false
                 markVisited(activity, step.id)
+                roundHandled.add(step.id)
                 if (step.id == STEP_LOCK_TASK) {
                     //收尾步骤无跳转，直接结束
                     finishWizard(activity)
@@ -219,12 +323,14 @@ object KeepAliveSetupWizard {
                     step.go(activity)
                 }
             }
-            .negativeText(R.string.setup_wizard_skip)
+            .negativeText(R.string.setup_wizard_skip_step)
             .onNegative { _: MaterialDialog?, _: DialogAction? ->
-                //暂不：结束本轮；可检测项（电池优化/精确闹钟/通知使用权）若仍缺省，
-                //审计会在下个周期再次提醒；不可检测的厂商项由心跳断档检测兜底
+                //跳过此步：仅跳过当前步骤，继续强制引导下一步（不可一键跳过全部）；
+                //可检测项若仍缺省会在下轮审计重新提醒，厂商不可检测项由心跳断档检测兜底
                 dialogOpen = false
-                finishWizard(activity)
+                markVisited(activity, step.id)
+                roundHandled.add(step.id)
+                showNextPending(activity)
             }
             .cancelable(false)
             .show()

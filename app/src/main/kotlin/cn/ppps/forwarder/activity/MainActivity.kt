@@ -338,6 +338,8 @@ class MainActivity : BaseActivity<ActivityMainBinding?>(), DrawerAdapter.OnItemS
     //引导用户完成厂商侧后台设置（自启动/省电策略），24小时内最多提示一次
     private fun checkKillRecoveryGuide() {
         if (SettingUtils.enablePureClientMode) return
+        //保活向导未完成时不叠弹：向导本身就在引导厂商侧设置
+        if (KeepAliveSetupWizard.isPending(this)) return
         if (!KeepAliveUtils.shouldShowKillGuide(this)) return
         KeepAliveUtils.markKillGuideShown(this)
 

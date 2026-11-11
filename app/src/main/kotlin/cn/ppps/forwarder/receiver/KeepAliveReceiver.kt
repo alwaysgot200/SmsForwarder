@@ -7,6 +7,7 @@ import android.os.Build
 import cn.ppps.forwarder.service.ForegroundService
 import cn.ppps.forwarder.utils.ACTION_KEEPALIVE_CHECK
 import cn.ppps.forwarder.utils.ACTION_START
+import cn.ppps.forwarder.utils.KeepAliveSetupWizard
 import cn.ppps.forwarder.utils.KeepAliveUtils
 import cn.ppps.forwarder.utils.Log
 import cn.ppps.forwarder.utils.SettingUtils
@@ -39,6 +40,9 @@ class KeepAliveReceiver : BroadcastReceiver() {
 
         //重排下一次心跳（灭屏短周期/亮屏常规周期自适应）
         KeepAliveUtils.scheduleAdaptiveWatchdog(context)
+
+        //24h 后台自动检测条件设置（内部节流），发现缺项发通知引导补充
+        KeepAliveSetupWizard.auditInBackground(context)
     }
 
     companion object {

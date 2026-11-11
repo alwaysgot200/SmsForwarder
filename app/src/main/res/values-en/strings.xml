@@ -139,6 +139,7 @@
 
     <string name="app_name">SmsForwarder</string>
     <string name="notification_content">Not only forwarding messages, \nbut also a must-have for backup devices!\nFree and open source, no selling!</string>
+    <string name="keepalive_tap_open">Tap to open</string>
     <!--Common-->
     <string name="cancel">Cancel</string>
     <string name="discard">Discard</string>
@@ -402,7 +403,10 @@
     <string name="setup_wizard_remain_hint">Keep-alive setup wizard: won’t bother you again once done, %1$d steps left</string>
     <string name="setup_wizard_go">Go to Settings</string>
     <string name="setup_wizard_skip">Not now</string>
+    <string name="setup_wizard_skip_step">Skip this step</string>
     <string name="setup_wizard_ok">Got it</string>
+    <string name="keepalive_audit_notify_title">Keep-alive settings check</string>
+    <string name="keepalive_audit_notify_content">%1$d keep-alive settings missing or reset: %2$s. Tap to fix.</string>
     <string name="kill_guide_title">The app was fully stopped by the system</string>
     <string name="kill_guide_message">The app was background-cleaned by the system last time and could not auto-recover (on some vendors, removing the app card from Recents acts like Force Stop and cancels all recovery mechanisms). Please enable the following to keep SMS forwarding alive:
 1. Auto-start → Allow
