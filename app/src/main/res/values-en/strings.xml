@@ -408,6 +408,10 @@
     <string name="setup_wizard_skip">Not now</string>
     <string name="setup_wizard_skip_step">Skip this step</string>
     <string name="setup_wizard_ok">Got it</string>
+    <string name="setup_wizard_miui_broadcast_title">Xiaomi/HyperOS SMS broadcast blocked</string>
+    <string name="setup_wizard_miui_broadcast_message">MIUI/HyperOS is blocking this app\'s SMS broadcasts: messages arrive, but the app never receives them, so forwarding silently fails (verified on a real REDMI device).\n\nIn the app\'s Permission Manager, set all SMS/MMS related toggles to \"Allow\". If this step still does not disappear after returning, the system UI has no matching toggle: connect the phone to a PC, tap the button below to copy the ADB release command and run it on the PC. This is a one-time system setting; once applied, forwarding is fully automatic.</string>
+    <string name="setup_wizard_miui_broadcast_copy_adb">Copy ADB release command</string>
+    <string name="setup_wizard_miui_broadcast_copied">ADB command copied</string>
     <string name="keepalive_audit_channel_name">Keep-alive settings check reminder</string>
     <string name="keepalive_audit_notify_title">Keep-alive settings check</string>
     <string name="keepalive_audit_notify_content">%1$d keep-alive settings missing or reset: %2$s. Tap to fix.</string>

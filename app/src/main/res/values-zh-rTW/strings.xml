@@ -408,6 +408,10 @@
     <string name="setup_wizard_skip">暫不</string>
     <string name="setup_wizard_skip_step">跳過此步</string>
     <string name="setup_wizard_ok">知道了</string>
+    <string name="setup_wizard_miui_broadcast_title">小米/澎湃簡訊廣播攔截</string>
+    <string name="setup_wizard_miui_broadcast_message">偵測到 MIUI/HyperOS 攔截了本應用的簡訊廣播：簡訊收得到，但應用收不到廣播，轉發會靜默失效（REDMI 實機實測）。\n\n請在應用「權限管理」中把簡訊、彩信等相關開關全部設為「允許」。若回到應用後本步驟仍不消失，表示系統介面未提供對應開關：請用電腦連接手機，點下方按鈕複製 ADB 放行命令並在電腦執行。放行為一次性系統設定，完成後轉發全程自動，無需再操作。</string>
+    <string name="setup_wizard_miui_broadcast_copy_adb">複製 ADB 放行命令</string>
+    <string name="setup_wizard_miui_broadcast_copied">已複製 ADB 命令</string>
     <string name="keepalive_audit_channel_name">保活設定檢查提醒</string>
     <string name="keepalive_audit_notify_title">保活設定檢查</string>
     <string name="keepalive_audit_notify_content">檢測到 %1$d 項保活設定缺失或被重置：%2$s，點擊補充設定</string>

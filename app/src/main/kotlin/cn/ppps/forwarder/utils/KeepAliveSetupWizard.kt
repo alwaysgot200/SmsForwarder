@@ -6,6 +6,8 @@ import android.app.AppOpsManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -51,6 +53,9 @@ object KeepAliveSetupWizard {
     //Android 13+ 侧载应用"允许受限设置"（无障碍/通知使用权授权的前置条件）
     private const val STEP_RESTRICTED_SETTINGS = 9
 
+    //MIUI/HyperOS 短信广播拦截（私有 appops 非放行）：真机实测会整体阻断短信接收转发
+    private const val STEP_MIUI_BROADCAST = 10
+
     private const val SP_SETUP_DONE = "keepalive_setup_wizard_done"
     private const val SP_SETUP_VISITED = "keepalive_setup_wizard_visited"
     private const val SP_LAST_AUDIT = "keepalive_audit_ts"
@@ -62,13 +67,13 @@ object KeepAliveSetupWizard {
     //后台 [auditInBackground] 两条路径触发），发现缺项立即提醒
     private const val AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000L
 
-    //后台审计缺项提醒通知
-    private const val AUDIT_NOTIFY_ID = 0x1012
-    private const val AUDIT_CHANNEL_ID = "cn.ppps.forwarder.keepalive_audit"
+    //后台审计缺项提醒通知（[MiuiBroadcastGuard] 告警复用同一渠道与 ID：单槽位不叠加）
+    internal const val AUDIT_NOTIFY_ID = 0x1012
+    internal const val AUDIT_CHANNEL_ID = "cn.ppps.forwarder.keepalive_audit"
 
     //可编程判定的设置项：跳过后若仍缺省，审计时按实时状态重新出现引导补充；
     //不可检测的厂商项（自启动/省电策略/验证码保护/最近任务锁）"去过即算"，不再重复打扰
-    private val DETECTABLE_STEPS = setOf(STEP_RESTRICTED_SETTINGS, STEP_BATTERY, STEP_EXACT_ALARM, STEP_NOTIFY_LISTEN, STEP_SMS_CTA)
+    private val DETECTABLE_STEPS = setOf(STEP_RESTRICTED_SETTINGS, STEP_BATTERY, STEP_EXACT_ALARM, STEP_NOTIFY_LISTEN, STEP_SMS_CTA, STEP_MIUI_BROADCAST)
 
     //从"去设置"跳出后置位，回到应用时据此推进下一步
     private var waitingReturn = false
@@ -90,6 +95,9 @@ object KeepAliveSetupWizard {
         val titleRes: Int,
         val messageRes: Int,
         val goRes: Int,
+        //可选第三按钮（如"复制 ADB 命令"）：0 = 不显示
+        val neutralRes: Int = 0,
+        val neutral: ((Activity) -> Unit)? = null,
         val go: (Activity) -> Unit
     )
 
@@ -139,10 +147,11 @@ object KeepAliveSetupWizard {
             return
         }
 
-        //向导已完成：限流复查缺项（可检测项按实时状态重新出现）
+        //向导已完成：限流复查缺项（可检测项按实时状态重新出现）；
+        //MIUI 广播拦截 = 转发链路整体失效，绕过 24h 节流，每次打开主窗口立即引导
         var lastAudit: Long by SharedPreference(SP_LAST_AUDIT, 0L)
         val now = System.currentTimeMillis()
-        if (now - lastAudit < AUDIT_INTERVAL_MS) return
+        if (now - lastAudit < AUDIT_INTERVAL_MS && !MiuiBroadcastGuard.isBlocked(activity)) return
         lastAudit = now
         showNextPending(activity, audit = true, newRound = true)
     }
@@ -154,6 +163,9 @@ object KeepAliveSetupWizard {
      */
     fun auditInBackground(context: Context) {
         if (SettingUtils.enablePureClientMode) return
+
+        //MIUI 广播拦截属高危缺项（转发静默失效）：按自身节流立即告警，不等 24h 审计周期
+        MiuiBroadcastGuard.warnIfNeeded(context)
 
         var lastAudit: Long by SharedPreference(SP_LAST_BG_AUDIT, 0L)
         val now = System.currentTimeMillis()
@@ -173,6 +185,9 @@ object KeepAliveSetupWizard {
     /** 可编程判定的缺项（无需 Activity），返回缺失步骤的标题资源 */
     private fun missingDetectableSteps(context: Context): List<Int> {
         val missing = mutableListOf<Int>()
+        if (MiuiBroadcastGuard.isBlocked(context)) {
+            missing.add(R.string.setup_wizard_miui_broadcast_title)
+        }
         if (isRestrictedSettingsBlocked(context)) {
             missing.add(R.string.setup_wizard_restricted_settings_title)
         }
@@ -236,6 +251,31 @@ object KeepAliveSetupWizard {
     }
 
     private fun buildSteps(activity: Activity): List<Step> = buildList {
+        //0 MIUI 短信广播拦截：整条接收链路失效的元凶（真机实测），最高优先引导放行
+        if (MiuiBroadcastGuard.isBlocked(activity)) {
+            add(
+                Step(
+                    id = STEP_MIUI_BROADCAST,
+                    titleRes = R.string.setup_wizard_miui_broadcast_title,
+                    messageRes = R.string.setup_wizard_miui_broadcast_message,
+                    goRes = R.string.setup_wizard_go,
+                    neutralRes = R.string.setup_wizard_miui_broadcast_copy_adb,
+                    neutral = {
+                        val clipboard = it.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("adb", MiuiBroadcastGuard.adbFixCommand(it)))
+                        XToastUtils.success(R.string.setup_wizard_miui_broadcast_copied)
+                    },
+                    go = {
+                        //首选 MIUI 权限管理（开关放行私有 appops）；无此页退化到应用信息页
+                        try {
+                            it.startActivity(Intent("miui.intent.action.APP_PERM_EDITOR").putExtra("extra_pkgname", it.packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (e: Exception) {
+                            it.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${it.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    }
+                )
+            )
+        }
         //1 忽略电池优化：防熄屏休眠断网，保活基石（系统授权框，点一下即可）
         if (!KeepAliveUtils.isIgnoreBatteryOptimization(activity)) {
             add(
@@ -384,11 +424,22 @@ object KeepAliveSetupWizard {
                 roundHandled.add(step.id)
                 showNextPending(activity)
             }
+            .apply {
+                if (step.neutralRes != 0) {
+                    neutralText(step.neutralRes)
+                    onNeutral { _: MaterialDialog?, _: DialogAction? -> step.neutral?.invoke(activity) }
+                }
+            }
             .cancelable(false)
             //对话框被销毁（旋转/关闭页面/按钮触发）时复位标志，防止 dialogOpen 卡死后
             //auditIfNeeded/向导被永久阻塞；代次校验避免误清新弹窗的状态
             .dismissListener { if (generation == dialogGeneration) dialogOpen = false }
             .show()
+    }
+
+    /** 供 [MiuiBroadcastGuard] 告警后调用：点开通知进入主窗口立即弹出引导（不等 24h 审计节流） */
+    internal fun resetUiAuditThrottle() {
+        SharedPreference.preference.edit().putLong(SP_LAST_AUDIT, 0L).apply()
     }
 
     private fun finishWizard(activity: Activity) {
