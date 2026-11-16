@@ -772,7 +772,8 @@
     <string name="auto_start_honor"><![CDATA[Honor: Application startup management -> turn off the application switch -> turn on allow self-starting]]></string>
     <string name="auto_start_xiaomi"><![CDATA[XiaoMi: Authorization Management -> Self-Start Management -> Allow Apps to Self-Start]]></string>
     <string name="auto_start_oppo"><![CDATA[OPPO (ColorOS): 1.Permissions & Privacy -> Auto-start -> Allow; 2.Settings -> Battery -> Advanced -> Allow full background behavior; 3.Lock the app card in Recents]]></string>
-    <string name="auto_start_vivo"><![CDATA[VIVO: Permission Management -> Self-Start -> Allow Apps to Self-Start]]></string>
+    <string name="auto_start_vivo"><![CDATA[VIVO (OriginOS/Funtouch): Settings -> Apps & permissions -> Permission manager -> Auto-start -> turn on this app; or iManager -> App management -> Permission manager -> Auto-start. Note: the system "Auto-start" is NOT the same as the in-app "Boot start", "Associated start" or "Background run"; for this step only the system "Auto-start" matters]]></string>
+    <string name="auto_start_vivo_home_tips">Opened the phone manager home: continue to Permission manager -> Auto-start and enable this app; Associated start alone does not work</string>
     <string name="auto_start_meizu"><![CDATA[MeiZu: Permission Management -> Background Management -> Click Apply -> Allow Background Running]]></string>
     <string name="auto_start_samsung"><![CDATA[SamSung: Autorun apps -> turn on app switch -> battery management -> unmonitored apps -> add apps]]></string>
     <string name="auto_start_letv"><![CDATA[LeTv: Self-starting management -> Allow applications to self-start]]></string>

@@ -803,7 +803,8 @@
     <string name="auto_start_honor"><![CDATA[荣耀手机：应用启动管理 -> 关闭应用开关 -> 打开允许自启动]]></string>
     <string name="auto_start_xiaomi"><![CDATA[小米手机：授权管理 -> 自启动管理 -> 允许应用自启动]]></string>
     <string name="auto_start_oppo"><![CDATA[OPPO手机（ColorOS）：1.权限隐私 -> 自启动管理 -> 允许自启动；2.设置 -> 电池 -> 更多设置（或耗电管理）-> 允许应用完全后台行为；3.最近任务界面下拉/长按应用卡片加锁]]></string>
-    <string name="auto_start_vivo"><![CDATA[vivo手机：权限管理 -> 自启动 -> 允许应用自启动]]></string>
+    <string name="auto_start_vivo"><![CDATA[vivo手机（OriginOS/Funtouch）：设置 -> 应用与权限 -> 权限管理 -> 自启动 -> 打开本应用开关；或 i管家 -> 应用管理 -> 权限管理 -> 自启动。注意：系统「自启动」与应用内「开机启动」、「关联启动」「后台运行」都是不同的开关，本步骤只需打开系统「自启动」，「关联启动」不能代替]]></string>
+    <string name="auto_start_vivo_home_tips">已打开手机管家首页：请继续进入「权限管理 -> 自启动」打开本应用；只开「关联启动」无效</string>
     <string name="auto_start_meizu"><![CDATA[魅族手机：权限管理 -> 后台管理 -> 点击应用 -> 允许后台运行]]></string>
     <string name="auto_start_samsung"><![CDATA[三星手机：自动运行应用程序 -> 打开应用开关 -> 电池管理 -> 未监视的应用程序 -> 添加应用]]></string>
     <string name="auto_start_letv"><![CDATA[乐视手机：自启动管理 -> 允许应用自启动]]></string>

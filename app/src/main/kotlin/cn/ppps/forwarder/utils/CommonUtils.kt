@@ -352,8 +352,12 @@ class CommonUtils private constructor() {
                 )
             )
             put(
+                //优先系统「权限管理->自启动」：i管家的「自启动管理」页首项是「关联启动」，
+                //用户很容易误开成关联启动，最后自启动仍是关闭的（vivo Android 13 实测反馈）
                 "vivo", listOf(
-                    "com.iqoo.secure/.ui.phoneoptimize.BgStartUpManager", "com.iqoo.secure/.safeguard.PurviewTabActivity", "com.vivo.permissionmanager/.activity.BgStartUpManagerActivity",  //"com.iqoo.secure/.ui.phoneoptimize.AddWhiteListActivity", //这是白名单, 不是自启动
+                    "com.vivo.permissionmanager/.activity.BgStartUpManagerActivity",
+                    "com.iqoo.secure/.ui.phoneoptimize.BgStartUpManager",
+                    "com.vivo.permissionmanager/.activity.PurviewTabActivity", "com.iqoo.secure/.safeguard.PurviewTabActivity",  //"com.iqoo.secure/.ui.phoneoptimize.AddWhiteListActivity", //这是白名单, 不是自启动
                     "com.iqoo.secure", "com.vivo.permissionmanager"
                 )
             )
@@ -445,49 +449,70 @@ class CommonUtils private constructor() {
     //跳转自启动页面
     fun startToAutoStartSetting(context: Context) {
         Log.e("Util", "******************The current phone model is:" + Build.MANUFACTURER)
-        val entries: MutableSet<MutableMap.MutableEntry<String?, List<String?>?>> = autoStartMap.entries
-        var has = false
-        for ((manufacturer, actCompatList) in entries) {
-            if (Build.MANUFACTURER.equals(manufacturer, ignoreCase = true)) {
-                if (actCompatList != null) {
-                    for (act in actCompatList) {
-                        try {
-                            var intent: Intent?
-                            if (act?.contains("/") == true) {
-                                intent = Intent()
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                val componentName = ComponentName.unflattenFromString(act)
-                                intent.component = componentName
-                            } else {
-                                //找不到? 网上的做法都是跳转到设置... 这基本上是没意义的 基本上自启动这个功能是第三方厂商自己写的安全管家类app
-                                //所以我是直接跳转到对应的安全管家/安全中心
-                                intent = act?.let { context.packageManager.getLaunchIntentForPackage(it) }
-                            }
-                            context.startActivity(intent)
-                            has = true
-                            break
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            Log.e("Util", "******************e:" + e.message)
-                        }
-                    }
-                }
+        val actCompatList = autoStartMap.entries.firstOrNull {
+            Build.MANUFACTURER.equals(it.key, ignoreCase = true)
+        }?.value
+        //先逐个尝试专属页面；只有专属页面全部不可达时，才退回厂商管家首页（按列表顺序逐个兜底）
+        val homePackages = mutableListOf<String>()
+        actCompatList?.forEach { act ->
+            if (act.isNullOrBlank()) return@forEach
+            if (!act.contains("/")) {
+                homePackages.add(act)
+                return@forEach
             }
+            if (launchAutoStartPage(context, act)) return
         }
-        if (!has) {
-            XToastUtils.info(R.string.tips_compatible_solution)
+        for (pkg in homePackages) {
+            if (!launchPackage(context, pkg)) continue
+            //管家首页不等于「自启动」页：vivo 首页/自启动页里还有「关联启动」，明确提示避免误开
+            if (isVivoFamily()) XToastUtils.info(R.string.auto_start_vivo_home_tips)
+            return
+        }
+        XToastUtils.info(R.string.tips_compatible_solution)
+        openAppDetailsSettings(context)
+    }
+
+    //启动厂商自启动页的显式组件；组件不存在或无权限时返回 false，继续尝试下一个候选
+    private fun launchAutoStartPage(context: Context, component: String): Boolean {
+        return try {
+            val componentName = ComponentName.unflattenFromString(component) ?: return false
+            val intent = Intent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).setComponent(componentName)
+            context.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.e("Util", "******************自启动页不可达 $component: ${e.message}")
+            false
+        }
+    }
+
+    //退回厂商管家/安全中心首页
+    private fun launchPackage(context: Context, packageName: String): Boolean {
+        return try {
+            val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+                ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                ?: return false
+            context.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.e("Util", "******************管家首页不可达 $packageName: ${e.message}")
+            false
+        }
+    }
+
+    //最终兜底：应用详情页（vivo 可在其中进入权限管理）
+    private fun openAppDetailsSettings(context: Context) {
+        try {
+            val intent = Intent()
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.action = "android.settings.APPLICATION_DETAILS_SETTINGS"
+            intent.data = Uri.fromParts("package", context.packageName, null)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("Util", "******************应用详情页不可达: ${e.message}")
             try {
-                val intent = Intent()
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                intent.action = "android.settings.APPLICATION_DETAILS_SETTINGS"
-                intent.data = Uri.fromParts("package", context.packageName, null)
-                context.startActivity(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.e("Util", "******************e:" + e.message)
-                val intent = Intent(Settings.ACTION_SETTINGS)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
+                context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e2: Exception) {
+                Log.e("Util", "******************系统设置不可达: ${e2.message}")
             }
         }
     }
